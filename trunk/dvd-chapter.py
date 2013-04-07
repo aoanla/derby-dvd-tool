@@ -18,6 +18,7 @@ fontsize = 20;
 font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize)
 rubyfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf",fontsize-4)
 menufont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize+4)
+
 def drawoutlinedtext(drawhandle,x,y,text, font, outlinecol, textcol):
 	"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
 	
@@ -95,6 +96,12 @@ def makeJammerSubImage (filename, Status):
 	if Status.Team1.StarPass is not None:
 		statusstrs[0]
 
+def makeMainMenu(filename):
+	"""Make the Main menu, from the standard menu subimages + a source backdrop"""
+
+def makeSubtitlesSubImage(filename):
+	"""Make the Subtitles menu, from the standard Subtitles subimages + a source backdrop"""
+
 def makeMenuSubImage(filename,Chapters,last=False):
 	"""make a set of gridded 3colour pngs for selecting the given Chapters"""
 	#needs to make 
@@ -150,7 +157,8 @@ def AddChapter(ChapterList,Time,Name):
 
 def Serialise(ChapterList, baseimg):
 	#this will write out the entire movie now, so execute last of all Serialisers
-	#it needs the credits done, as well as the movie subtitles muxed
+	#it needs the credits done, as well as the movie subtitles muxed, including the main menu + subtitles menu
+	#we make the chapter menu vobs here, as it's convenient to generate the menus while we generate the dvdauthor xml
 	
 	#start by writing out the header for dvdauthor
 	'<?xml version="1.0" encoding="UTF-8"?>' + "\n"
@@ -161,17 +169,25 @@ def Serialise(ChapterList, baseimg):
 	"</fpc>\n"
 	#define the main menu here in the vmgm
 	"<menus>\n"
-	"<pgc>\n"
+	"<pgc>\n"	
+
 	#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
 	# or jump to menu 2 (in the vmgm), the subtitles menu
+
 	"<\pgc>\n"
 	'<pgc entry="subtitle">' + "\n"
+
 	#TODO - the subtitles menu (set subtitles to none,0,1,2)
+
 	"</pgc>\n"
 	"</menus>\n"
 	"</vmgm>\n"
 	"<titleset>\n"
-	"<menus>"
+	"<menus>\n"
+	#start making chapter menus
+	#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere
+	ffmpeg -loop 1 -shortest -y -i menubackdrop.jpg -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg	
+	#then make lots of chapter menus with it
 	for block of 8 chapters:
 		#make 3 subpictures (4x2 arrangement) - normal, highlight, select
 		if last block, last = True #removes "Next" button
@@ -186,7 +202,7 @@ def Serialise(ChapterList, baseimg):
 		#and mux
 		spumux menuspumux.xml < menubackdrop.mpg > fname+".mpg"
 
-		#outputthe xml for this menu for dvdauthor (this is where the actions come in
+		#outputthe xml for this menu for dvdauthor (this is where the actions come in)
 
 		"<pgc>\n"
 		for chapter in block:
@@ -199,10 +215,11 @@ def Serialise(ChapterList, baseimg):
 
 	"</menus>\n"
 	#now we've done the menus, setup the movie bit, with the list of chapters
-	"<titles>"
+	"<titles>\n"
 	'<video format="pal" aspect="16:9" widescreen="nopanscan" />' + "\n"
+	'<audio format="ac3" channels="2" />' + "\n"
 	"<pgc>\n"
-	'<vob file="' + name of movie itself + '" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
+	'<vob file="bout012.mpg" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
 	"<post>jump title 2;</post>\n" #the credits are title 2
 	"</pgc>\n"
 	#and add the credits as title 2
@@ -213,6 +230,10 @@ def Serialise(ChapterList, baseimg):
 	"</titles>\n"
 	"</titleset>\n"
 	"</dvdauthor>\n"
+	#write out to auth.xml
+	#and make an ISO
+	subprocess.call("dvdauthor -x auth.xml", shell=True)
+	subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
 
 class JamSubs(object):
 	def __init__(self):
@@ -250,31 +271,21 @@ class JamSubs(object):
            #Therefore ScoreJammerlines are precisely as frequent as Jammerlines, as each Scoreline also has a Jammerline
            #Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
            # more than one bout in a DVD) with Scorelines
-			if Delta.Score is not None:
+			if (also a chapter): #then it's a scoreline
 				spuframe[0] += 1 #increment number of Scoreline frames
-                        
-				printline (Status.Team1.Name, location, Status.TeamColour)
-				printline (Status.Team1.Score, location1, Status.TeamColour)
-			
-				printline (Status.Period+":"+Status.Jam, locationx, Status.NeutralColour)
-			
-				printline (Status.Team2.Score, location2, Status.TeamColour)
-				printline (Status.Team2.Name, location3, Status.TeamColour)
 				outname[0] = "Scoreline" + str(spuframe[0]) + ".png"
+				makeScoreSubImage(outname[0],Status)
+				endtime = next Chapter after this
+				self.AddSpumuxxml(spumuxxmls[0],Status.Starttime,endtime,outname[0],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
 
-				self.AddSpumuxxml(spumuxxmls[0],starttime,endtime,outname[0],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
-
-			#update Jammer
-			if Delta.Jammer is not None:
-				spuframe[1] += 1 #increment number of Jammerline frames
-
-
-				#also represent LJ,PJ,SP status somehow (icon? bold/italics?)
-				printline (Status.Team1.Jammer, location, Status.Team.Colour)
-				printline (Status.Team2.Jammer, location2, Status.Team.Colour)
-				outname[1] = "Jammerline" + str(spuframe[1]) + ".png"
-
-				self.AddSpumuxxml(spumuxxmls[1],starttime,endtime,outname[1],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
+			#update Jammer (always)
+			spuframe[1] += 1 #increment number of Jammerline frames
+			#also represent LJ,PJ,SP status somehow (icon? bold/italics?)
+			printline (Status.Team1.Jammer, location, Status.Team.Colour)
+			printline (Status.Team2.Jammer, location2, Status.Team.Colour)
+			outname[1] = "Jammerline" + str(spuframe[1]) + ".png"
+			makeJammerSubImage(outname[1],Status)
+			self.AddSpumuxxml(spumuxxmls[1],Status.Starttime,Status.Endtime,outname[1],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
 
 			#update JammerScore
 			# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)
@@ -288,7 +299,7 @@ class JamSubs(object):
 			except OSError as e:
 				print >>sys.stderr, "Execution failed:", e
 
-			self.AddSpumuxxml(spumuxxmls[2],starttime,endtime,outname[2],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
+			self.AddSpumuxxml(spumuxxmls[2],Status.Starttime,Status.Endtime,outname[2],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
 
 		#and close the xml streams
 		spumuxxmls = [i+"</stream>\n</subpictures>\n" for in spumuxxmls]

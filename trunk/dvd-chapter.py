@@ -6,68 +6,141 @@
 #
 ###
 import string, Image, ImageDraw, ImagePalette, ImageFont
-import os, sys, codecs, subprocess
+import os, sys, codecs, subprocess, textwrap
 
 
 
 #these parts and other bits of code for writing nice subtitle images stolen from aug.ment.org/dvd/makespumux.py
 width = 720;
 height = 576;
-fontsize = 32;
+fontsize = 20;
 #font = ImageFont.truetype("/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf", fontsize)
-font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", fontsize)
-def makeSubImage( filename, t):
-	"""make a 3color png for DVD subtitles"""
-	#taken from aug.ment.org/dvd/makespumux.py
-	im = Image.new('P',(width, height), 2 )
-	palette = []
-	palette.extend( ( 255,255,255 )  )
-	palette.extend( ( 0,0,0 )  )
-	im.putpalette(palette)
-	draw = ImageDraw.Draw(im);
+font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize)
+rubyfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf",fontsize-4)
+menufont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize+4)
+def drawoutlinedtext(drawhandle,x,y,text, font, outlinecol, textcol):
+	"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
 	
-	c = 0;
-	splitpnt  = 0;
-	max = -1
-	lines = [];
-	
-	while( max < 0 or max > (width - 70) ):
-		## we need to find out how many lines to make
-		max = -1;
-		c = c + 1;
-		splitpnt = 0;
-		lines = [];
-		for i in range(1,c+1):
-			lo = splitpnt;
-			end = i * ( len(t)/c);
-			#print "end = " + str(end);
-			splitpnt = t.rfind(' ', 0,  end )
-			if (i == c):
-				splitpnt = len(t);
-			#print str(lo) + ":" + str(splitpnt);
-			line = t[lo:splitpnt]
-			line = line.lstrip();
-			line = line.rstrip();
-			lines.append(line) ;
-			tmp = draw.textsize( line, font=font);
-			if (tmp[0] > max ):
-				max = tmp[0];
-				#print str(i) + ' = ' + line
-				#print "max = " + str(max)
-		if (c > 5):
-			quit();
-		c =0
-   for i in lines:
-		print i
-		tsize = draw.textsize( i, font=font);
-		x = (width - tsize[0] ) / 2;
-		y = height - (( tsize[1] * (len(lines) - c ) ) + 34);
-		c = c +1;
-		draw.text( (x +2 ,y +2), i, font=font, fill=1 )
-		draw.text( (x,y), i, font=font, fill=0 )
-		
-	im.save( filename, "PNG", transparency=2)
+	draw.text((x-1, y), text, font=font, fill=outlinecol)
+	draw.text((x+1, y), text, font=font, fill=outlinecol)
+	draw.text((x, y-1), text, font=font, fill=outlinecol)
+	draw.text((x, y+1), text, font=font, fill=outlinecol)
+	draw.text((x, y), text, font=font, fill=textcol)
 
+def getrightalignedloc(draw, x,text, font):
+	"""Correct width location so text looks right-aligned (PIL only does left)"""
+	w, h = draw.textsize(text,font=font)
+	return x-w #shift "rightaligned location" back by length of text
+
+def getcentredloc(draw,text,font):
+	"""Correct width location so text is centred (PIL only does left)"""
+	w, h = draw.textsize(text,font=font)
+	return (width-w)/2 #shift "centred location" back by 1/2 length of text
+
+def initSubImage():
+	"""Initalise the PIL canvas for a new SubImage"""
+	im = Image.new('P',(width, height), 1 )
+        palette = []
+        palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
+        palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
+	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
+	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
+        im.putpalette(palette)
+        draw = ImageDraw.Draw(im);
+	return draw, im
+
+def makeScoreSubImage (filename, Status):
+	"""make a 3colour png for the Scoreline, at top of display"""
+	#needs to make
+	#
+	#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
+	d,i = initSubImage()
+	string1 = '{:<20}'.format(Teams[Status.Team1.ID]["Name"]) 
+	string1 += '  ' + '{0:<3}'.format(Status.Team1.Score)
+	string2 += 'P' + Status.Period + 'J' + '{:<2}'.format(Status.Jam)
+	string3 += '{0:<3}'.format(Status.Team2.Score)
+	string3 += '  ' + '{:>20}'.format(Teams[Status.Team2.ID]["Name"])
+	 
+	#regularise team name + score lines to standard length
+	drawoutlinedtext(d,6,22,string1,font,2,3)
+	drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,2,4)
+	drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),22,string3,font,2,3)
+	i.save( filename, "PNG", transparency=1)
+
+def makeJammerSubImage (filename, Status):
+	"""make a 3colour png for the Jammerline, at bottom of display"""
+	#needs to make
+	#
+	# J1 Status      Status J2 (allowed width 60 = 720)
+	d,i = initSubImage()
+	#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
+	#consider wrapping names in that case, using the textwrap.wrap(text,width) method
+	jammers = (Teams[Status.Team1.ID]["Skaters"][Status.Team1.Jammer],(Teams[Status.Team1.ID]["Skaters"][Status.Team2.Jammer])
+	string1 = '{:<25}'.format(jammers[0])
+	string2 = '{:>25}'.format(jammers[1])
+	drawoutlinedtext(d,6,550,string1,font,2,3)
+	drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,2,3)
+	#strings1a, 2a are the status strings for jammer status, and appear above the names
+	statusstrs = ["",""]
+	if Status.LeadJammer is not None:
+		statusstrs[Status.LeadJammer] += "Lead "
+		statusstrs[1 - Status.LeadJammer] += "     "
+	else:
+		statusstrs = [s + "     " for s in statusstrs]
+	if Status.PowerJam is not None:
+		statusstrs[Status.PowerJam] += "Power "
+		statusstrs[1 - Status.PowerJam] += "     "
+	else:
+		statusstrs = [s + "     " for s in statusstrs] 
+	if Status.Team1.StarPass is not None:
+		statusstrs[0]
+
+def makeMenuSubImage(filename,Chapters,last=False):
+	"""make a set of gridded 3colour pngs for selecting the given Chapters"""
+	#needs to make 
+	#
+	#  C C C C
+	#  C C C C
+	#  B     N
+	# and needs to know if needs N (if last Chapter is in the list then we don't need it)
+	d,i = initSubImage()
+	
+	#render blocks of 4, width=10 chars + 2 char padding
+	#normal image is called filename+"n.png"
+	#select image is called filename+"s.png"
+	#highlight image is called filename+"h.png"
+
+def makeCreditsCrawl(Teams,Officials,Extracredits)
+	"""Make a long png for the credits crawl to be rendered from"""
+	#first we need to collect metrics, as we need to make our image the right length
+	#this requires a "sacrificial" image to let us use the draw.textsize metric
+	im = Image.new('RGB',(width,height))
+	d = ImageDraw.Draw(im)
+	w, h = d.textsize("A",font=creditsfont)
+	#get metrics and workout how much space we need
+	numlines = 5 #intro and outro padding
+	#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
+	numlines += sum([len(s["Skaters"])+4 for s in Teams]) #num of skaters + 2 for League,Team + 2 for spacing
+	numlines += len(Officials["Skaters"])+3 #num of skaters + 1 for title + 2 for spacing
+	numlines += len(Extracredits)
+	
+	crawl_height = numlines * h
+	#and make our working image
+	im = Image.new('RGB',(width,crawl_height))
+	d = ImageDraw.Draw(im)	
+
+	rendertoppiece
+	for t in Teams:
+		renderleaguename
+		renderteamname
+		for s in Teams["Skaters"]:
+			renderskater, captains first, benchstaff last
+		render2blanks
+	for o in Officials:
+		renderofficial, headref first, titles!
+	render2blanks
+	for line in Extracredits:
+		renderline
 
 
 
@@ -76,18 +149,70 @@ def AddChapter(ChapterList,Time,Name):
 
 
 def Serialise(ChapterList, baseimg):
-	for block of 8 chapters:
-		make 3 subpictures (4x2 arrangement) - normal, highlight, select
-		make xml for spumux (Button actions are "go to chapter X")
-		"<subpictures><stream>\n"
-		'<spu force="yes" start="00:00:00:00" image="' + normal + '" select="' + select + '" highlight="' + highlight + '" >' + "\n"
-		'<button ...
-		"</spu></stream></subpictures>\n"
-		and mux
-		spumux menuspumux.xml < menubackdrop.mpg > thismenuname.mpg
-
-	output list of chapter times for dvdauthor
+	#this will write out the entire movie now, so execute last of all Serialisers
+	#it needs the credits done, as well as the movie subtitles muxed
 	
+	#start by writing out the header for dvdauthor
+	'<?xml version="1.0" encoding="UTF-8"?>' + "\n"
+	'<dvdauthor dest="' + pathtodvdtmpdir + '">' + "\n"
+	"<vmgm>\n"
+	"<fpc>\n"
+	"jump menu 1\n" #I think this goes to the first menu in the vmgm...
+	"</fpc>\n"
+	#define the main menu here in the vmgm
+	"<menus>\n"
+	"<pgc>\n"
+	#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
+	# or jump to menu 2 (in the vmgm), the subtitles menu
+	"<\pgc>\n"
+	'<pgc entry="subtitle">' + "\n"
+	#TODO - the subtitles menu (set subtitles to none,0,1,2)
+	"</pgc>\n"
+	"</menus>\n"
+	"</vmgm>\n"
+	"<titleset>\n"
+	"<menus>"
+	for block of 8 chapters:
+		#make 3 subpictures (4x2 arrangement) - normal, highlight, select
+		if last block, last = True #removes "Next" button
+		if first block, first = True #changes "Prev" button target to the main menu
+		fname="chaptermenu"+str(blocknum)
+		makemenuSubImage(fname,block,last)
+		#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
+		#remember to add autobutton detection, in row then column mode
+		"<subpictures><stream>\n"
+		'<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" >' + "\n"
+		"</spu></stream></subpictures>\n"
+		#and mux
+		spumux menuspumux.xml < menubackdrop.mpg > fname+".mpg"
+
+		#outputthe xml for this menu for dvdauthor (this is where the actions come in
+
+		"<pgc>\n"
+		for chapter in block:
+			"<button>jump chapter" + chapter.index + ";</button>\n"
+		"<button>jump menu" prev chaptermenu or main menu if first + ";</button>\n"
+		if not last "<button> jump menu" next chaptermenu + ";</button>\n"
+		'<vob file="'+fname+'.mpg" />' + "\n"
+
+		"</pgc>\n"
+
+	"</menus>\n"
+	#now we've done the menus, setup the movie bit, with the list of chapters
+	"<titles>"
+	'<video format="pal" aspect="16:9" widescreen="nopanscan" />' + "\n"
+	"<pgc>\n"
+	'<vob file="' + name of movie itself + '" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
+	"<post>jump title 2;</post>\n" #the credits are title 2
+	"</pgc>\n"
+	#and add the credits as title 2
+	"<pgc>\n"
+	'<vob file="' + name of credits + '" />' + "\n"
+	"<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
+	"<\pgc>\n"
+	"</titles>\n"
+	"</titleset>\n"
+	"</dvdauthor>\n"
 
 class JamSubs(object):
 	def __init__(self):
@@ -96,21 +221,14 @@ class JamSubs(object):
 
 	def AddChange(JamDelta):
 		#make change to "core list", and update only the subtitle streams we need to (can we store changes as diffs internally??)
-		#Deltas must know, at least, their start and endtime (endtime=nextDelta's starttime). We can also make tests easier by marking them as Scoreline
-		and or Jammerline
-		#The problem here is that the endtime of a Delta depends on context (Jammer- vs Score- vs JammerScore-lines)		
-		
-		#we could split the structure into "JammerDelta" and "ScoreDelta" parts (of a single struct) then each can have an endtime (and we pick the soonest
-		#for the JammerScore endtime, of course - or we defer outputting a JammerScore until the *next* Delta, since its starttime must be our endtime!
-
+		# Deltas are always Jammerlines (and thus always ScoreJammerlines), as we only change the Scoreline on new jams. Just store Deltas and detect *Scorelines* as being also *Chapters* (since Chapters are also on new Jams)
 
 	def AddSpumuxxml(spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
 		spumuxxmls += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
 		spumuxxmls += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Status.NeutralColour + '" e2="' + Status.Team1.Colour + '" />' + "\n"
-		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Status.NeutralColour + '" e2="' + Status.Team2.Col
-our + '" />' + "\n"
+		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Team1Colour + '" e2="' + NeutralColour + '" />' + "\n"
+		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Team2Colour + '" e2="' + NeutralColour + '" />' + "\n"
 		#Above does the below pseudocode, with a suitably patched spumux binary(!)
 		#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 		#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)

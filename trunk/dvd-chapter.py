@@ -19,6 +19,75 @@ font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", f
 rubyfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf",fontsize-4)
 menufont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize+4)
 
+
+#Structure
+
+def Bout(object):
+	def __init__(self):
+		self.Teams = [] #team 1,2
+		self.Officials = []
+		self.Jams = []
+		#self.Timeouts = []
+		self.SkateoutTime = None
+		self.HalfTime = None
+		self.EndTime = None
+
+def Team(object):
+	def __init__(self):
+		self.LeagueName = ""
+		self.TeamName = ""
+		self.Skaters = []
+
+def Skater(object):
+	def __init__(self):
+		self.Skatename = ""
+		self.Number = ""
+		self.Role = None #see enum below
+
+#enum for Skater:
+CAPTAIN = 0
+VICECAPTAIN = 1
+BENCH = 2
+LINEUP = 3
+
+def Officials(object):
+	def __init__(self):
+		self.Name = ""
+		self.Number = ""
+		self.Role = None #see enum below
+
+#enum for Officials:
+HEAD=0
+JAM=1
+IPR=2
+OPR=3
+
+def Jam(object):
+	def __init__(self):
+		self.StartTime = ""
+		self.Period = 0
+		self.Jam = 0
+		self.Jammers = [] #refs to Skaters, Team1,Team2
+		self.Pivots = [] #refs to Pivots, Team1, Team2
+		self.Score = [] #numerical scores to Team1,Team2
+		self.Events = [] #contains the moments of Lead Jammer, Power Jam start/end, Star Pass
+		#self.EndTime = ""
+
+def Event(object):
+	def __init__(self):
+		self.Time = ""
+		self.Team = None #0 or 1 for Team 1 or 2
+		self.Type = None #LJ, PJStart, PJEnd, Star Pass
+
+#enum for Events
+LEAD=0
+POWERSTART = 1
+POWEREND = 2
+STAR = 3
+
+#Functions
+
+
 def drawoutlinedtext(drawhandle,x,y,text, font, outlinecol, textcol):
 	"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
 	

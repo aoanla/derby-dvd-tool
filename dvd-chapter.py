@@ -28,10 +28,15 @@ def Bout(object):
 		self.Officials = []
 		self.Jams = []
 		#self.Timeouts = []
-		self.SkateoutTime = None
-		self.HalfTime = None
-		self.EndTime = None
-		self.Awards = None #time in stream that awards sequence occurs
+		self.Timing = Timing()
+
+def Timing(object):
+	def __init__(self):
+		self.Start = None
+		self.Skateout = None
+		self.Halftime = None
+		self.Fulltime = None
+		self.Awards = None
 
 def Team(object):
 	def __init__(self):

@@ -36,7 +36,21 @@ class TimingDialog(SD.Dialog):
 			self.StartEntry.insert(0,self.data.Start)
 			self.SkateoutEntry.delete(0,Tk.END)
 			self.SkateoutEntry.insert(0,self.data.Skateout)
-			#etc
+			self.HalftimeEntry.delete(0,Tk.END)
+			self.HalftimeEntry.insert(0,self.data.Halftime)
+			self.FulltimeEntry.delete(0,Tk.END)
+			self.FulltimeEntry.insert(0,self.data.Fulltime)
+			self.AwardsEntry.delete(0,Tk.END)
+			self.AwardsEntry.insert(0,self.data.Awards)
+	
+	def apply(self):
+		self.data = dc.Timing()
+		self.data.Start = self.StartEntry.get()
+		self.data.Skateout = self.SkateoutEntry.get()
+		self.data.Halftime = self.HalftimeEntry.get()
+		self.data.Fulltime = self.FulltimeEntry.get()
+		self.data.Awards = self.AwardsEntry.get()
+
 
 class JamsDialog(SD.Dialog):
 	def body(self,master):
@@ -49,14 +63,14 @@ class JamsDialog(SD.Dialog):
 		jamframes = []		
 		self.JamEntries = []
 		for i in range(25): #initial set of rows for jams
-			#So initial row is [Time HH:MM:SS.HH] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
+			#So initial row is [Time HH:MM:SS.HH] [Period] [Jam] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
 			# and the [Add Event] adds an Event row under the current row
 			self.JamEntries.append([])
 			jamframes.append(Tk.Frame(topframe)) #this is the containing frame for the initial row + event rows we dynamically add
 			jamframes[i].pack()
 			#add initial entry boxes:
 			for j in range(7):
-				#make the Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
+				#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
 				self.JamEntries[i].append(Tk.Entry(jamframes[i]))
 				self.JamEntries[i][j].pack(side=Tk.LEFT)
 				#option menu messing
@@ -79,7 +93,6 @@ class JamsDialog(SD.Dialog):
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
 				jentry[-1][1].intsert(0,event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
-				jentry[-1][3][event.Type].select() #and this is setting the "selected" radio button to match the internals
 
 	def add_eventrow(self,frame,entry):
 		return lambda: self._add_eventrow(frame,entry)
@@ -95,9 +108,7 @@ class JamsDialog(SD.Dialog):
 		row.append(Tk.IntVar(dc.LEAD))  #Radio Buttons for Event type, default value Lead Jammer call
 		decode = ("Lead Jammer","Power Jam Starts", "Power Jam Ends", "Star Pass")
 		for i in range(dc.STAR+1):
-			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i)
-			if i = dc.LEAD: #default entry is Lead Jammer
-				t.select()
+			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i).pack(side=Tk.RIGHT)
 		entry.append(row)
 
 	def apply(self):
@@ -136,9 +147,8 @@ class OfficialsDialog(SD.Dialog):
 			self.OfficialEntries.append([])
 			decode = ("Head Ref","Jam Ref","IPR","OPR")
 			for j in range(dc.OPR+1):
-				self.OfficialEntries[i][3].append(Tk.Radiobutton(s,text=decode[j],variable=self.SkaterEntries[i][2],value=j)
-				self.OfficialEntries[i][3][j].pack(side=Tk.RIGHT)
-			self.OfficialEntries[i][3][dc.JAM].select() #the default button in group
+				r = Tk.Radiobutton(s,text=decode[j],variable=self.SkaterEntries[i][2],value=j)
+				r.pack(side=Tk.RIGHT)
 		
 		#and unpack data if given it
 		if self.data is not None:
@@ -148,7 +158,6 @@ class OfficialsDialog(SD.Dialog):
 				o[0].insert(0,s.Name)
 				o[1].insert(0,s.Number)
 				#and set radio buttons
-				o[3][s.Role].select()
 				o[2].set(s.Role)
 				
 	#def validate(self):
@@ -182,13 +191,11 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 				ss.pack(side=Tk.LEFT)
 				self.SkaterEntries[i].append(ss)
 			#and make radio button array (fairly sure that the "set" is based on the common parent (s) )
-			self.SkaterEntries[i].append(dc.SKATER)
-			self.SkaterEntries[i].append([])
+			self.SkaterEntries[i].append(Tk.IntVar(dc.SKATER))
 			decode = ("Captain","Vice-Captain","Skater","Bench","Line-up")			
 			for j in range(dc.LINEUP+1):
-				self.SkaterEntries[i][3].append(Tk.Radiobutton(s, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
-				self.SkaterEntries[i][3][j].pack(side=Tk.RIGHT)
-			self.SkaterEntries[i][3][dc.SKATER].select() #this is the default button in group
+				t=(Tk.Radiobutton(s, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
+				t.pack(side=Tk.RIGHT)
 
 		#and unpack data if we were given it
 		if self.data is not None:
@@ -201,8 +208,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 				se[0].insert(0,s.Skatename)
 				se[1].insert(0,s.Number)
 				#and set radio buttons however we do that
-				se[3][s.Role].select()
-				se[2]=s.Role				
+				se[2].set(s.Role)				
 
 
 	#def validate(self):
@@ -223,7 +229,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 			s = dc.Skater()
 			s.Skatename = skate_entry[0].get()
 			s.Number = skate_entry[1].get()
-			s.Role = skate_entry[2] #reading the linked button state variable
+			s.Role = skate_entry[2].get() #reading the linked button state variable
 			self.data.Skaters.append(s)				
 
 class DerbyTK(object):
@@ -257,6 +263,8 @@ class DerbyTK(object):
 		#     [Skating official] [number] Role:Head[x] Jam[x] IPR[x] OPR[x]
 		# any of the fields can be blank (but the first field with a blank official name signals end of list)
 		# this also needs to handle being called more than once for multiple bouts. Possibly need an internal "Bout number" field
+		d = OfficialsDialog(self.root,title="Officials Bout "+str(boutnum+1), data=self.Bouts[boutnum].Officials)
+		self.Bouts[boutnum].Officials = d.data #do I actually need this, given shallow copy semantics?
 
 	def JamsWindow(self,boutnum):
 		return lambda: self._JamsWindow(boutnum)
@@ -272,6 +280,8 @@ class DerbyTK(object):
 		# The parser assumes that if part of an entry is empty, then the previous value should be continued
 		# (but if the Time is empty, then this signals the end of the list)
 		# Pivot data is mostly used to determine the Jammer after a star pass.
+		d = JamsDialog(self.root, title="Jams: Bout " + str(boutnum+1), data=[self.Bouts[boutnum].Jams, self.Bouts[boutnum]])
+		self.Bouts[boutnum].Jams = d.data[0] #does shallow copy semantics make this irrelevant?
 
 	def TimingWindow(self,boutnum):
 		return lambda: self._TimingWindow(boutnum)
@@ -283,6 +293,8 @@ class DerbyTK(object):
 		# [Time HH:MM:SS.HH] [Halftime]
 		# [Time HH:MM:SS.HH] [Fulltime]
 		# [Time HH:MM:SS.HH] [Awards]
+		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts.Timing)
+		self.Bouts[boutnum].Timing = d.data #shallow copies might make this irrelevant
 
 	def boutbuttonarray(self):
 		"""Make an array of buttons for adding a new bout's info (Teams,Officials,Jams)"""
@@ -290,21 +302,17 @@ class DerbyTK(object):
 		self.buttonframe.append(Tk.Frame(self.buttonmasterframe)) #the default button frame
 		self.buttonframe[boutnum].pack()
 		self.buttonarray.append([Tk.Button(self.buttonframe[0]) for i in range(4)])
-		self.buttonarray[boutnum][0].configure(text="Add Team "+str(boutnum*2+1))
+		self.buttonarray[boutnum][0].configure(text="Add Team "+str(boutnum*2+1), command=self.TeamNWindow(boutnum*2))
 		self.buttonarray[boutnum][0].pack(side=Tk.LEFT)
-		self.buttonarray[boutnum][0].bind("<Button-1">,self.TeamNWindow(boutnum*2)) #numbering teams from 0 internally as is pythonic
-		self.buttonarray[boutnum][1].configure(text="Add Team "+str(boutnum*2+2))
+		#todo: replace binds with command= (as optimised for button press events)
+		self.buttonarray[boutnum][1].configure(text="Add Team "+str(boutnum*2+2), command=self.TeamNWindow(boutnum*2+1))
 		self.buttonarray[boutnum][1].pack(side=Tk.LEFT)
-		self.buttonarray[boutnum][1].bind("<Button-1>",self.TeamNWindow(boutnum*2+1))
-		self.buttonarray[boutnum][2].configure(text="Add Officials bout "+str(boutnum+1))
+		self.buttonarray[boutnum][2].configure(text="Add Officials bout "+str(boutnum+1)), command=self.OfficialsWindow(boutnum))
 		self.buttonarray[boutnum][2].pack(side=Tk.LEFT)
-		self.buttonarray[boutnum][2].bind("<Button-1>",self.OfficialsWindow(boutnum))
-		self.buttonarray[boutnum][3].configure(text="Enter Jam info bout "+str(boutnum+1))
+		self.buttonarray[boutnum][3].configure(text="Enter Jam info bout "+str(boutnum+1), command=self.JamsWindow(boutnum))
 		self.buttonarray[boutnum][3].pack(side=Tk.LEFT)
-		self.buttonarray[boutnum][3].bind("<Button-1">,self.JamsWindow(boutnum))
-		self.buttonarray[boutnum][4].configure(text="Enter ancillary timing for bout " +str(boutnum+1))
+		self.buttonarray[boutnum][4].configure(text="Enter ancillary timing for bout " +str(boutnum+1), command=self.TimingWindow(boutnum))
 		self.buttonarray[boutnum][4].pack(side=Tk.RIGHT)
-		self.buttonarray[boutnum][4].bind("<Button-1">,self.TimingWindow(boutnum))
 		self._b += 1
 
 	def RenderDVD(self):

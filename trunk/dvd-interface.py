@@ -11,11 +11,15 @@ import tkSimpleDialog as SD
 #dialogs derived from tkSimpleDialog class that makes those non-interruptable dialogs that disable the main window when they're active
 #hacked a bit to add a "data" field that you use to pass data to and from the dialogs
 
+#NOTE : need to change all those neat vars that RadioButtons reference into Tk.StringVar s (and add get() methods to their readers, set() methods to writers). Stupid Tk.
+
 class TimingDialog(SD.Dialog):
 	def body(self,master):
 		topframe = Tk.Frame(master)
 		topframe.pack()
 		#do the ancillary info (Skateout, Halftime, Fulltime, Awards timing)
+		self.StartEntry = tk.Entry(topframe)
+		self.StartEntry.pack()
 		self.SkateoutEntry = tk.Entry(topframe)
 		self.SkateoutEntry.pack()
 		self.HalftimeEntry = tk.Entry(topframe)
@@ -26,8 +30,13 @@ class TimingDialog(SD.Dialog):
 		self.AwardsEntry.pack()
 		
 		#and now get the existing info from the passed data:
-		
-
+		# in this case, this is the Timing  object for the bout
+		if self.data is not None:	
+			self.StartEntry.delete(0,Tk.END)
+			self.StartEntry.insert(0,self.data.Start)
+			self.SkateoutEntry.delete(0,Tk.END)
+			self.SkateoutEntry.insert(0,self.data.Skateout)
+			#etc
 
 class JamsDialog(SD.Dialog):
 	def body(self,master):
@@ -44,18 +53,22 @@ class JamsDialog(SD.Dialog):
 			# and the [Add Event] adds an Event row under the current row
 			self.JamEntries.append([])
 			jamframes.append(Tk.Frame(topframe)) #this is the containing frame for the initial row + event rows we dynamically add
-			jamframe[i].pack()
+			jamframes[i].pack()
 			#add initial entry boxes:
 			for j in range(7):
-				self.JamEntries[i].append(Tk.Entry(jamframe[i]))
+				#make the Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
+				self.JamEntries[i].append(Tk.Entry(jamframes[i]))
 				self.JamEntries[i][j].pack(side=Tk.LEFT)
+				#option menu messing
+				self.JamEntries[i]=Tk.IntVar( #really? need to know if I can return *numbers* and display *names* for options
+				Tk.OptionMenu(jamframes[i],self.data[1].Team1.Skaters[0],*(self.data[1].Team1.Skaters) ) #data[1] is the Bout struct for this bout
 			
 			#and add the button for events (see below for callback)
-			eventbut = Tk.Button(self.JamFrames[i],text="Add Event Row",command=self.add_eventrow(jamframe[i],self.JamEntries[i])
+			eventbut = Tk.Button(self.JamFrames[i],text="Add Event Row",command=self.add_eventrow(jamframes[i],self.JamEntries[i])
 			eventbut.pack(Tk.RIGHT)
 
-		#now fill in info from data
-		for (jam,jentry,jframe) in zip(self.data,self.JamEntries,jamframes):
+		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
+		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
 			jentry[0] = jam.Time
 			jentry[1] = jam.Jammer1 #etc
 			
@@ -65,7 +78,7 @@ class JamsDialog(SD.Dialog):
 				#this row is always the last one, so
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
 				jentry[-1][1].intsert(0,event.Team) #the second entry box is the Team ID
-				jentry[-1][2] = event.Type #this is the internal value of the radio button selector 
+				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
 				jentry[-1][3][event.Type].select() #and this is setting the "selected" radio button to match the internals
 
 	def add_eventrow(self,frame,entry):
@@ -79,13 +92,29 @@ class JamsDialog(SD.Dialog):
 		row.pack(side=Tk.LEFT)
 		row.append(Tk.Entry(f)) #Team number (validate this as a number on submit, or even on entry...)
 		row.pack(side=Tk.LEFT)		
-		row.append(dc.LEAD)  #Radio Buttons for Event type, default value Lead Jammer call
+		row.append(Tk.IntVar(dc.LEAD))  #Radio Buttons for Event type, default value Lead Jammer call
 		decode = ("Lead Jammer","Power Jam Starts", "Power Jam Ends", "Star Pass")
 		for i in range(dc.STAR+1):
 			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i)
 			if i = dc.LEAD: #default entry is Lead Jammer
 				t.select()
 		entry.append(row)
+
+	def apply(self):
+		#self.data[1] is the Bout structure, don't clobber it!
+		self.data[0] = []
+		for jam_entry in self.JamEntries:
+			j = dc.Jam()
+			j.Time = jam_entry[0].get()
+ 			#and so on
+			j.
+			#then do events!
+			for event_entry in jam_entry[7:]:
+				e = dc.Event()
+				e.Time = event_entry[0].get()
+				e.Team = event_entry[1].get()
+				e.Type = event_entry[2].get()
+			self.data[0].append(j)
 
 class OfficialsDialog(SD.Dialog):
 	def body(self,master):
@@ -103,7 +132,7 @@ class OfficialsDialog(SD.Dialog):
 				ss.pack(side=Tk.LEFT)
 				self.OfficialEntries[i].append(ss)
 			#and radio buttons for roles
-			self.OfficialEntries.append(dc.JAM)
+			self.OfficialEntries.append(Tk.IntVar(dc.JAM))
 			self.OfficialEntries.append([])
 			decode = ("Head Ref","Jam Ref","IPR","OPR")
 			for j in range(dc.OPR+1):
@@ -113,27 +142,26 @@ class OfficialsDialog(SD.Dialog):
 		
 		#and unpack data if given it
 		if self.data is not None:
-			j=0
-			for s in self.data.Officials:
+			for (s,o) in zip(self.data,self.OfficialEntries):
 				for i in range(2):
-					self.OfficialEntries[j][i].delete(0,Tk.END)
-				self.OfficialEntries[j][0].insert(0,s.Name)
-				self.OfficialEntries[j][1].insert(0,s.Number)
+					o[i].delete(0,Tk.END)
+				o[0].insert(0,s.Name)
+				o[1].insert(0,s.Number)
 				#and set radio buttons
-				self.OfficialEntries[j][3][s.Role].select()
-				self.OfficialEntries[j][2]=s.Role
-				j += 1
+				o[3][s.Role].select()
+				o[2].set(s.Role)
+				
 	#def validate(self):
 	
 	def apply(self):
-		if data is None:
-			self.data = []
+		#if data is None:
+		self.data = []
 		for official_entry in self.OfficialEntries:
 			if official_entry[0].get() = "" then break #end of list signalled by blank name
 			s = dc.Official()
 			s.Name = official_entry[0].get()
 			s.Number = official_entry[1].get()
-			s.Role = official_entry[2]
+			s.Role = official_entry[2].get()
 			self.data.append(s)
 
 class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an existing Team structure if one is available for the Team 
@@ -166,16 +194,16 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		if self.data is not None:
 			self.LeagueEntry.delete(0,Tk.END)
 			self.LeagueEntry.insert(0,data.LeagueName)
-			j = 0
-			for s in self.data.Skaters:
+			
+			for (s,se) in zip(self.data.Skaters,self.SkaterEntries):
 				for i in range(2):
-					self.SkaterEntries[j][i].delete(0,Tk.END)
-				self.SkaterEntries[j][0].insert(0,s.Skatename)
-				self.SkaterEntries[j][1].insert(0,s.Number)
+					se[i].delete(0,Tk.END)
+				se[0].insert(0,s.Skatename)
+				se[1].insert(0,s.Number)
 				#and set radio buttons however we do that
-				self.SkaterEntries[j][3][s.Role].select()
-				self.SkaterEntries[j][2]=s.Role				
- 				j += 1
+				se[3][s.Role].select()
+				se[2]=s.Role				
+
 
 	#def validate(self):
 	#	#optional method for validating input when apply is called	

@@ -31,6 +31,7 @@ def Bout(object):
 		self.SkateoutTime = None
 		self.HalfTime = None
 		self.EndTime = None
+		self.Awards = None #time in stream that awards sequence occurs
 
 def Team(object):
 	def __init__(self):
@@ -42,21 +43,24 @@ def Skater(object):
 	def __init__(self):
 		self.Skatename = ""
 		self.Number = ""
-		self.Role = None #see enum below
+		self.Role = SKATER #see enum below
 
-#enum for Skater:
+#enum for Skater (designed so order by Role gives credits order):
+
 CAPTAIN = 0
 VICECAPTAIN = 1
-BENCH = 2
-LINEUP = 3
+SKATER = 2
+BENCH = 3
+LINEUP = 4
 
-def Officials(object):
+
+def Official(object):
 	def __init__(self):
 		self.Name = ""
 		self.Number = ""
 		self.Role = None #see enum below
 
-#enum for Officials:
+#enum for Official (designed so order by Role gives credits order):
 HEAD=0
 JAM=1
 IPR=2
@@ -84,6 +88,7 @@ LEAD=0
 POWERSTART = 1
 POWEREND = 2
 STAR = 3
+
 
 #Functions
 
@@ -186,7 +191,7 @@ def makeMenuSubImage(filename,Chapters,last=False):
 	#select image is called filename+"s.png"
 	#highlight image is called filename+"h.png"
 
-def makeCreditsCrawl(Teams,Officials,Extracredits)
+def makeCreditsCrawl(Bouts,Extracredits)
 	"""Make a long png for the credits crawl to be rendered from"""
 	#first we need to collect metrics, as we need to make our image the right length
 	#this requires a "sacrificial" image to let us use the draw.textsize metric
@@ -194,10 +199,16 @@ def makeCreditsCrawl(Teams,Officials,Extracredits)
 	d = ImageDraw.Draw(im)
 	w, h = d.textsize("A",font=creditsfont)
 	#get metrics and workout how much space we need
+
+	#get Teams, Officials from Bouts structure
+
 	numlines = 5 #intro and outro padding
-	#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
-	numlines += sum([len(s["Skaters"])+4 for s in Teams]) #num of skaters + 2 for League,Team + 2 for spacing
-	numlines += len(Officials["Skaters"])+3 #num of skaters + 1 for title + 2 for spacing
+	for B in Bouts:
+		#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
+		numlines += sum([len(s["Skaters"])+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
+		numlines += len(b.Officials)+3 #num of skaters + 1 for title + 2 for spacing
+		numlines += 2 #for spacing
+	
 	numlines += len(Extracredits)
 	
 	crawl_height = numlines * h
@@ -206,21 +217,24 @@ def makeCreditsCrawl(Teams,Officials,Extracredits)
 	d = ImageDraw.Draw(im)	
 
 	rendertoppiece
-	for t in Teams:
-		renderleaguename
-		renderteamname
-		for s in Teams["Skaters"]:
-			renderskater, captains first, benchstaff last
+	for b in Bouts:
+		for t in b.Teams:
+			renderleaguename #optional extension: render league logo
+			renderteamname	 #optional extension: render team logo
+			for s in Teams["Skaters"]:
+				renderskater, captains first, benchstaff last
+			render2blanks
+		for o in b.Officials:
+			renderofficial, headref first, titles!
 		render2blanks
-	for o in Officials:
-		renderofficial, headref first, titles!
-	render2blanks
 	for line in Extracredits:
 		renderline
 
 
 
 def AddChapter(ChapterList,Time,Name):
+	#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
+	#Credits are *not* a Chapter, they are a separately rendered title
 	return ChapterList.append({"T":Time,"N":Name})
 
 
@@ -332,6 +346,16 @@ class JamSubs(object):
 		spuframes = [0,0,0]
 		outname = ["","",""]
 		spumuxxmls = ["<subpictures>\n<stream>\n","<subpictures>\n<stream>\n","<subpictures>\n<stream>\n"]
+
+		# revise below (we're now Bout centric) 
+		# for Jam in Bout.Jams:
+		#	do Scoreline at start of Jam	
+		#	do Jammerline at start of Jam
+		#	do ScoreJammerline at start of Jam
+		#	for Event in Jam:
+		#		do Jammerline
+		#		do ScoreJammerline
+
 		for Delta in self.JamDeltas:
 			Status.Update(Delta)
 			#update Score

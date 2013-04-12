@@ -95,238 +95,243 @@ POWEREND = 2
 STAR = 3
 
 
-#Functions
+#Functions of the Bout Render class render a contained Bouts object
 
+#they use the helper JamSubs class to render the bout subtitles
+class BoutRender(object):
+	def __init__(self,Bouts):
+		self.Bouts = Bouts
 
-def drawoutlinedtext(drawhandle,x,y,text, font, outlinecol, textcol):
-	"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
+	def drawoutlinedtext(drawhandle,x,y,text, font, outlinecol, textcol):
+		"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
+		
+		draw.text((x-1, y), text, font=font, fill=outlinecol)
+		draw.text((x+1, y), text, font=font, fill=outlinecol)
+		draw.text((x, y-1), text, font=font, fill=outlinecol)
+		draw.text((x, y+1), text, font=font, fill=outlinecol)
+		draw.text((x, y), text, font=font, fill=textcol)
+		
+	def getrightalignedloc(draw, x,text, font):
+		"""Correct width location so text looks right-aligned (PIL only does left)"""
+		w, h = draw.textsize(text,font=font)
+		return x-w #shift "rightaligned location" back by length of text
 	
-	draw.text((x-1, y), text, font=font, fill=outlinecol)
-	draw.text((x+1, y), text, font=font, fill=outlinecol)
-	draw.text((x, y-1), text, font=font, fill=outlinecol)
-	draw.text((x, y+1), text, font=font, fill=outlinecol)
-	draw.text((x, y), text, font=font, fill=textcol)
-
-def getrightalignedloc(draw, x,text, font):
-	"""Correct width location so text looks right-aligned (PIL only does left)"""
-	w, h = draw.textsize(text,font=font)
-	return x-w #shift "rightaligned location" back by length of text
-
-def getcentredloc(draw,text,font):
-	"""Correct width location so text is centred (PIL only does left)"""
-	w, h = draw.textsize(text,font=font)
-	return (width-w)/2 #shift "centred location" back by 1/2 length of text
-
-def initSubImage():
-	"""Initalise the PIL canvas for a new SubImage"""
-	im = Image.new('P',(width, height), 1 )
-        palette = []
-        palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
-        palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
-	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
-	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
-        im.putpalette(palette)
-        draw = ImageDraw.Draw(im);
-	return draw, im
-
-def makeScoreSubImage (filename, Status):
-	"""make a 3colour png for the Scoreline, at top of display"""
-	#needs to make
-	#
-	#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
-	d,i = initSubImage()
-	string1 = '{:<20}'.format(Teams[Status.Team1.ID]["Name"]) 
-	string1 += '  ' + '{0:<3}'.format(Status.Team1.Score)
-	string2 += 'P' + Status.Period + 'J' + '{:<2}'.format(Status.Jam)
-	string3 += '{0:<3}'.format(Status.Team2.Score)
-	string3 += '  ' + '{:>20}'.format(Teams[Status.Team2.ID]["Name"])
-	 
-	#regularise team name + score lines to standard length
-	drawoutlinedtext(d,6,22,string1,font,2,3)
-	drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,2,4)
-	drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),22,string3,font,2,3)
-	i.save( filename, "PNG", transparency=1)
-
-def makeJammerSubImage (filename, Status):
-	"""make a 3colour png for the Jammerline, at bottom of display"""
-	#needs to make
-	#
-	# J1 Status      Status J2 (allowed width 60 = 720)
-	d,i = initSubImage()
-	#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
-	#consider wrapping names in that case, using the textwrap.wrap(text,width) method
-	jammers = (Teams[Status.Team1.ID]["Skaters"][Status.Team1.Jammer],(Teams[Status.Team1.ID]["Skaters"][Status.Team2.Jammer])
-	string1 = '{:<25}'.format(jammers[0])
-	string2 = '{:>25}'.format(jammers[1])
-	drawoutlinedtext(d,6,550,string1,font,2,3)
-	drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,2,3)
-	#strings1a, 2a are the status strings for jammer status, and appear above the names
-	statusstrs = ["",""]
-	if Status.LeadJammer is not None:
-		statusstrs[Status.LeadJammer] += "Lead "
-		statusstrs[1 - Status.LeadJammer] += "     "
-	else:
-		statusstrs = [s + "     " for s in statusstrs]
-	if Status.PowerJam is not None:
-		statusstrs[Status.PowerJam] += "Power "
-		statusstrs[1 - Status.PowerJam] += "     "
-	else:
-		statusstrs = [s + "     " for s in statusstrs] 
-	if Status.Team1.StarPass is not None:
-		statusstrs[0]
-
-def makeMainMenu(filename):
-	"""Make the Main menu, from the standard menu subimages + a source backdrop"""
-
-def makeSubtitlesSubImage(filename):
-	"""Make the Subtitles menu, from the standard Subtitles subimages + a source backdrop"""
-
-def makeMenuSubImage(filename,Chapters,last=False):
-	"""make a set of gridded 3colour pngs for selecting the given Chapters"""
-	#needs to make 
-	#
-	#  C C C C
-	#  C C C C
-	#  B     N
-	# and needs to know if needs N (if last Chapter is in the list then we don't need it)
-	d,i = initSubImage()
+	def getcentredloc(draw,text,font):
+		"""Correct width location so text is centred (PIL only does left)"""
+		w, h = draw.textsize(text,font=font)
+		return (width-w)/2 #shift "centred location" back by 1/2 length of text
 	
-	#render blocks of 4, width=10 chars + 2 char padding
-	#normal image is called filename+"n.png"
-	#select image is called filename+"s.png"
-	#highlight image is called filename+"h.png"
-
-def makeCreditsCrawl(Bouts,Extracredits)
-	"""Make a long png for the credits crawl to be rendered from"""
-	#first we need to collect metrics, as we need to make our image the right length
-	#this requires a "sacrificial" image to let us use the draw.textsize metric
-	im = Image.new('RGB',(width,height))
-	d = ImageDraw.Draw(im)
-	w, h = d.textsize("A",font=creditsfont)
-	#get metrics and workout how much space we need
-
-	#get Teams, Officials from Bouts structure
-
-	numlines = 5 #intro and outro padding
-	for B in Bouts:
-		#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
-		numlines += sum([len(s["Skaters"])+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
-		numlines += len(b.Officials)+3 #num of skaters + 1 for title + 2 for spacing
-		numlines += 2 #for spacing
+	def initSubImage():
+		"""Initalise the PIL canvas for a new SubImage"""
+		im = Image.new('P',(width, height), 1 )
+	        palette = []
+	        palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
+	        palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
+		palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
+		palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
+	        im.putpalette(palette)
+	        draw = ImageDraw.Draw(im);
+		return draw, im
 	
-	numlines += len(Extracredits)
+	def makeScoreSubImage (filename, Status):
+		"""make a 3colour png for the Scoreline, at top of display"""
+		#needs to make
+		#
+		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
+		d,i = initSubImage()
+		string1 = '{:<20}'.format(Teams[Status.Team1.ID]["Name"]) 
+		string1 += '  ' + '{0:<3}'.format(Status.Team1.Score)
+		string2 += 'P' + Status.Period + 'J' + '{:<2}'.format(Status.Jam)
+		string3 += '{0:<3}'.format(Status.Team2.Score)
+		string3 += '  ' + '{:>20}'.format(Teams[Status.Team2.ID]["Name"])
+		 
+		#regularise team name + score lines to standard length
+		drawoutlinedtext(d,6,22,string1,font,2,3)
+		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,2,4)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),22,string3,font,2,3)
+		i.save( filename, "PNG", transparency=1)
 	
-	crawl_height = numlines * h
-	#and make our working image
-	im = Image.new('RGB',(width,crawl_height))
-	d = ImageDraw.Draw(im)	
+	def makeJammerSubImage (filename, Status):
+		"""make a 3colour png for the Jammerline, at bottom of display"""
+		#needs to make
+		#
+		# J1 Status      Status J2 (allowed width 60 = 720)
+		d,i = initSubImage()
+		#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
+		#consider wrapping names in that case, using the textwrap.wrap(text,width) method
+		jammers = (Teams[Status.Team1.ID]["Skaters"][Status.Team1.Jammer],(Teams[Status.Team1.ID]["Skaters"][Status.Team2.Jammer])
+		string1 = '{:<25}'.format(jammers[0])
+		string2 = '{:>25}'.format(jammers[1])
+		drawoutlinedtext(d,6,550,string1,font,2,3)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,2,3)
+		#strings1a, 2a are the status strings for jammer status, and appear above the names
+		statusstrs = ["",""]
+		if Status.LeadJammer is not None:
+			statusstrs[Status.LeadJammer] += "Lead "
+			statusstrs[1 - Status.LeadJammer] += "     "
+		else:
+			statusstrs = [s + "     " for s in statusstrs]
+		if Status.PowerJam is not None:
+			statusstrs[Status.PowerJam] += "Power "
+			statusstrs[1 - Status.PowerJam] += "     "
+		else:
+			statusstrs = [s + "     " for s in statusstrs] 
+		if Status.Team1.StarPass is not None:
+			statusstrs[0]
 
-	rendertoppiece
-	for b in Bouts:
-		for t in b.Teams:
-			renderleaguename #optional extension: render league logo
-			renderteamname	 #optional extension: render team logo
+	def makeMainMenu(filename):
+		"""Make the Main menu, from the standard menu subimages + a source backdrop"""
+
+	def makeSubtitlesSubImage(filename):
+		"""Make the Subtitles menu, from the standard Subtitles subimages + a source backdrop"""
+
+	def makeMenuSubImage(filename,Chapters,last=False):
+		"""make a set of gridded 3colour pngs for selecting the given Chapters"""
+		#needs to make 
+		#
+		#  C C C C
+		#  C C C C
+		#  B     N
+		# and needs to know if needs N (if last Chapter is in the list then we don't need it)
+		d,i = initSubImage()
+		
+		#render blocks of 4, width=10 chars + 2 char padding
+		#normal image is called filename+"n.png"
+		#select image is called filename+"s.png"
+		#highlight image is called filename+"h.png"
+	
+	def makeCreditsCrawl(Extracredits)
+		"""Make a long png for the credits crawl to be rendered from"""
+		#first we need to collect metrics, as we need to make our image the right length
+		#this requires a "sacrificial" image to let us use the draw.textsize metric
+		im = Image.new('RGB',(width,height))
+		d = ImageDraw.Draw(im)
+		w, h = d.textsize("A",font=creditsfont)
+		#get metrics and workout how much space we need
+	
+		#get Teams, Officials from Bouts structure
+	
+		numlines = 5 #intro and outro padding
+		for B in self.Bouts:
+			#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
+			numlines += sum([len(s["Skaters"])+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
+			numlines += len(b.Officials)+3 #num of skaters + 1 for title + 2 for spacing
+			numlines += 2 #for spacing
+		
+		numlines += len(Extracredits)
+	
+		crawl_height = numlines * h
+		#and make our working image
+		im = Image.new('RGB',(width,crawl_height))
+		d = ImageDraw.Draw(im)	
+
+		rendertoppiece
+		for b in self.Bouts:
+			for t in b.Teams:
+				renderleaguename #optional extension: render league logo
+				renderteamname	 #optional extension: render team logo
 			for s in Teams["Skaters"]:
 				renderskater, captains first, benchstaff last
+				render2blanks
+			for o in b.Officials:
+				renderofficial, headref first, titles!
 			render2blanks
-		for o in b.Officials:
-			renderofficial, headref first, titles!
-		render2blanks
-	for line in Extracredits:
-		renderline
+		for line in Extracredits:
+			renderline
 
 
 
-def AddChapter(ChapterList,Time,Name):
-	#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
-	#Credits are *not* a Chapter, they are a separately rendered title
-	return ChapterList.append({"T":Time,"N":Name})
-
-
-def Serialise(ChapterList, baseimg):
-	#this will write out the entire movie now, so execute last of all Serialisers
-	#it needs the credits done, as well as the movie subtitles muxed, including the main menu + subtitles menu
-	#we make the chapter menu vobs here, as it's convenient to generate the menus while we generate the dvdauthor xml
+	def AddChapter(ChapterList,Time,Name):
+		#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
+		#Credits are *not* a Chapter, they are a separately rendered title
+		return ChapterList.append({"T":Time,"N":Name})
 	
-	#start by writing out the header for dvdauthor
-	'<?xml version="1.0" encoding="UTF-8"?>' + "\n"
-	'<dvdauthor dest="' + pathtodvdtmpdir + '">' + "\n"
-	"<vmgm>\n"
-	"<fpc>\n"
-	"jump menu 1\n" #I think this goes to the first menu in the vmgm...
-	"</fpc>\n"
-	#define the main menu here in the vmgm
-	"<menus>\n"
-	"<pgc>\n"	
-
-	#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
-	# or jump to menu 2 (in the vmgm), the subtitles menu
-
-	"<\pgc>\n"
-	'<pgc entry="subtitle">' + "\n"
-
-	#TODO - the subtitles menu (set subtitles to none,0,1,2)
-
-	"</pgc>\n"
-	"</menus>\n"
-	"</vmgm>\n"
-	"<titleset>\n"
-	"<menus>\n"
-	#start making chapter menus
-	#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere
-	ffmpeg -loop 1 -shortest -y -i menubackdrop.jpg -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg	
-	#then make lots of chapter menus with it
-	for block of 8 chapters:
-		#make 3 subpictures (4x2 arrangement) - normal, highlight, select
-		if last block, last = True #removes "Next" button
-		if first block, first = True #changes "Prev" button target to the main menu
-		fname="chaptermenu"+str(blocknum)
-		makemenuSubImage(fname,block,last)
-		#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
-		#remember to add autobutton detection, in row then column mode
-		"<subpictures><stream>\n"
-		'<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" >' + "\n"
-		"</spu></stream></subpictures>\n"
-		#and mux
-		spumux menuspumux.xml < menubackdrop.mpg > fname+".mpg"
-
-		#outputthe xml for this menu for dvdauthor (this is where the actions come in)
-
-		"<pgc>\n"
-		for chapter in block:
-			"<button>jump chapter" + chapter.index + ";</button>\n"
-		"<button>jump menu" prev chaptermenu or main menu if first + ";</button>\n"
-		if not last "<button> jump menu" next chaptermenu + ";</button>\n"
-		'<vob file="'+fname+'.mpg" />' + "\n"
-
+	
+	def Serialise(ChapterList, baseimg):
+		#this will write out the entire movie now, so execute last of all Serialisers
+		#it needs the credits done, as well as the movie subtitles muxed, including the main menu + subtitles menu
+		#we make the chapter menu vobs here, as it's convenient to generate the menus while we generate the dvdauthor xml
+		
+		#start by writing out the header for dvdauthor
+		'<?xml version="1.0" encoding="UTF-8"?>' + "\n"
+		'<dvdauthor dest="' + pathtodvdtmpdir + '">' + "\n"
+		"<vmgm>\n"
+		"<fpc>\n"
+		"jump menu 1\n" #I think this goes to the first menu in the vmgm...
+		"</fpc>\n"
+		#define the main menu here in the vmgm
+		"<menus>\n"
+		"<pgc>\n"	
+	
+		#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
+		# or jump to menu 2 (in the vmgm), the subtitles menu
+	
+		"<\pgc>\n"
+		'<pgc entry="subtitle">' + "\n"
+	
+		#TODO - the subtitles menu (set subtitles to none,0,1,2)
+	
 		"</pgc>\n"
+		"</menus>\n"
+		"</vmgm>\n"
+		"<titleset>\n"
+		"<menus>\n"
+		#start making chapter menus
+		#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere
+		ffmpeg -loop 1 -shortest -y -i menubackdrop.jpg -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg	
+		#then make lots of chapter menus with it
+		for block of 8 chapters:
+			#make 3 subpictures (4x2 arrangement) - normal, highlight, select
+			if last block, last = True #removes "Next" button
+			if first block, first = True #changes "Prev" button target to the main menu
+			fname="chaptermenu"+str(blocknum)
+			makemenuSubImage(fname,block,last)
+			#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
+			#remember to add autobutton detection, in row then column mode
+			"<subpictures><stream>\n"
+			'<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" >' + "\n"
+			"</spu></stream></subpictures>\n"
+			#and mux
+			spumux menuspumux.xml < menubackdrop.mpg > fname+".mpg"
 
-	"</menus>\n"
-	#now we've done the menus, setup the movie bit, with the list of chapters
-	"<titles>\n"
-	'<video format="pal" aspect="16:9" widescreen="nopanscan" />' + "\n"
-	'<audio format="ac3" channels="2" />' + "\n"
-	"<pgc>\n"
-	'<vob file="bout012.mpg" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
-	"<post>jump title 2;</post>\n" #the credits are title 2
-	"</pgc>\n"
-	#and add the credits as title 2
-	"<pgc>\n"
-	'<vob file="' + name of credits + '" />' + "\n"
-	"<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
-	"<\pgc>\n"
-	"</titles>\n"
-	"</titleset>\n"
-	"</dvdauthor>\n"
-	#write out to auth.xml
-	#and make an ISO
-	subprocess.call("dvdauthor -x auth.xml", shell=True)
-	subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
+			#outputthe xml for this menu for dvdauthor (this is where the actions come in)
+	
+			"<pgc>\n"
+			for chapter in block:
+				"<button>jump chapter" + chapter.index + ";</button>\n"
+			"<button>jump menu" prev chaptermenu or main menu if first + ";</button>\n"
+			if not last "<button> jump menu" next chaptermenu + ";</button>\n"
+			'<vob file="'+fname+'.mpg" />' + "\n"
+	
+			"</pgc>\n"
 
+		"</menus>\n"
+		#now we've done the menus, setup the movie bit, with the list of chapters
+		"<titles>\n"
+		'<video format="pal" aspect="16:9" widescreen="nopanscan" />' + "\n"
+		'<audio format="ac3" channels="2" />' + "\n"
+		"<pgc>\n"
+		'<vob file="bout012.mpg" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
+		"<post>jump title 2;</post>\n" #the credits are title 2
+		"</pgc>\n"
+		#and add the credits as title 2
+		"<pgc>\n"
+		'<vob file="' + name of credits + '" />' + "\n"
+		"<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
+		"<\pgc>\n"
+		"</titles>\n"
+		"</titleset>\n"
+		"</dvdauthor>\n"
+		#write out to auth.xml
+		#and make an ISO
+		subprocess.call("dvdauthor -x auth.xml", shell=True)
+		subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
+
+#a bouts subtitler class
 class JamSubs(object):
-	def __init__(self):
-		self.
-
+	def __init__(self,Bouts):
+		self.Bouts = Bouts
+		#yes we do need to iterate over potentially more than one bout
 
 	def AddChange(JamDelta):
 		#make change to "core list", and update only the subtitle streams we need to (can we store changes as diffs internally??)
@@ -419,6 +424,8 @@ class JamSubs(object):
 			moviefile = outfile
 		#At this point, we have a file called "bout012.mpg", which has bout.mpg muxed with the 3 subtitle files, hopefully
 
+	#to do: decide if we need this class, or just move it into the Bout Render class (either way, we need to rationalise the location of the functions of this class
+	# and the functions of Bout Render (some of which are called by, and share state with, the functions here...)
 
 def WriteDVDxml():
 <dvdauthor>

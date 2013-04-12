@@ -61,13 +61,25 @@ class JamsDialog(SD.Dialog):
 		
 		
 		#and now do the Jams
+		# this is all in a Canvas so we can have a nice vertical scrollbar
+		c = Tk.Canvas(master)
+		f = Tk.Frame(c)
+		v = Tk.Scrollbar(master, orient="vertical",command=c.yview)
+		c.configure(yscrollcommand=v.set)
+		v.pack(side=Tk.RIGHT,fill="y")
+		c.pack(side=Tk.LEFT,fill="both",expand=True)
+		c.create_window((4,4),window=f,anchor="nw",tags="f")
+		def OFC(event):
+			c.configure(scrollregion=c.bbox("all"))
+		f.bind("<Configure>",OFC)
+
 		jamframes = []		
 		self.JamEntries = []
 		for i in range(25): #initial set of rows for jams
 			#So initial row is [Time HH:MM:SS.HH] [Period] [Jam] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
 			# and the [Add Event] adds an Event row under the current row
 			self.JamEntries.append([])
-			jamframes.append(Tk.Frame(topframe)) #this is the containing frame for the initial row + event rows we dynamically add
+			jamframes.append(Tk.Frame(f)) #this is the containing frame for the initial row + event rows we dynamically add
 			jamframes[i].pack()
 			#add initial entry boxes:
 			for j in range(7):
@@ -198,6 +210,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		self.TeamEntry = Tk.Entry(topframe)
 		self.TeamEntry.pack(side=Tk.LEFT)
 		self.TeamCol = (255,255,255)
+		self.TeamHex = "#ffffff"
 		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=colourcallback) #colourpicker
 		self.TeamColButton.pack(side=Tk.LEFT)
 		self.SkaterEntries = []
@@ -223,6 +236,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 			self.TeamEntry.delete(0,Tk.END)
 			self.TeamEntry.insert(0,self.data.TeamName)
 			self.TeamCol = self.data.TeamCol
+			self.TeamHex = '#{0:02x}{1:02x}{2:02x}'.format(*self.TeamCol)
 			for (s,se) in zip(self.data.Skaters,self.SkaterEntries):
 				for i in range(2):
 					se[i].delete(0,Tk.END)
@@ -337,8 +351,24 @@ class DerbyTK(object):
 		self.buttonarray[boutnum][4].pack(side=Tk.RIGHT)
 		self._b += 1
 
+	def RenderSubs(self):
+		"""Render the movie subtitles, using dvd-chapter"""
+		self.BR = dc.BoutRender(self.Bouts,self.Extracredits)
+		self.BR.RenderSubs()
+		
+	def RenderCredits(self):
+		"""Render the movie credits, using dvd-chapter"""
+		self.BR.RenderCredits()
+		
 	def RenderDVD(self):
 		"""Render the DVD, using the functions in dvd-chapter, imported as dc"""
+		self.BR.RenderDVD()
+	
+	def save(self):
+		pickle(self.Bouts)
+
+	def load(self):
+		unpickle(self.Bouts)
 
 	def mainWindow(self):
 		"""The Main Tkinter window interface"""
@@ -348,7 +378,7 @@ class DerbyTK(object):
 		#   {Enter Team 1} {Enter Team 2} {Enter Officials} {Enter Jam info} {Enter ancillary timing}
 		#   {Add another bout} 
 		# (which adds a row of {Enter Team 2N-1} {Enter Team 2N} {Enter Officials}? {Enter Jam info}? buttons
-		#   {Render DVD} 
+		#   {Render Subs} {Render Credits} {Render DVD} 
 		# which muxes the subtitle stream, generates chapter menus and credits crawls, then authors the DVD structure + makes an ISO
 		#
 	 	# (In a future version, we will have an "Import from Rinxter" button to use the API to pull all the info except Chapter times from Rinxter instance)
@@ -365,13 +395,15 @@ class DerbyTK(object):
 		self._b = 0
 		self.boutbuttonarray() #make the default button array (for "Bout 0", counting pythonically)
 		
-		self.lastframe = Tk.Frame(self.root)
-		self.lastframe.pack()
-		self.nextboutbutton = Tk.Button(self.lastframe)
-		self.nextboutbutton.pack(side=Tk.LEFT)
-		self.nextboutbutton.bind("<Button-1>",self.boutbuttonarray)
-		self.renderdvdbutton = Tk.Button(self.lastframe)
-		self.renderdvdbutton.pack(side=Tk.RIGHT)
-		self.renderdvdbutton.binf("<Button-1>",self.RenderDVD)
+		frame = Tk.Frame(self.root)
+		frame.pack()
+		Tk.Button(frame,text="New bout row", command=self.boutbuttonarray).pack(side=Tk.LEFT)
+		Tk.Button(frame,text="Save", command=self.save).pack(side=Tk.RIGHT)
+		
+		bframe = Tk.Frame(self.root)
+		
+		Tk.Button(bframe,text="Render Subs",command=self.RenderSubs).pack(side=Tk.LEFT)
+		Tk.Button(bframe,text="Render Credits",command=self.RenderCredits).pack(side=Tk.LEFT)
+		Tk.Button(bframe,text="Render DVD", command=self.RenderDVD).pack(side=Tk.LEFT)
 
 		self.root.mainloop()

@@ -152,13 +152,13 @@ class BoutRender(object):
 	def initSubImage():
 		"""Initalise the PIL canvas for a new SubImage"""
 		im = Image.new('P',(width, height), 1 )
-	        palette = []
-	        palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
-	        palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
+		palette = []
+		palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
+		palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
 		palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
 		palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
-	        im.putpalette(palette)
-	        draw = ImageDraw.Draw(im);
+		im.putpalette(palette)
+		draw = ImageDraw.Draw(im);
 		return draw, im
 	
 	def makeScoreSubImage (self,filename, boutnum,jamnum):
@@ -274,6 +274,7 @@ class BoutRender(object):
 		filename="credits.mpg"
 		rendertoppiece
 		for b in self.Bouts:
+			renderboutheader
 			for t in b.Teams:
 				renderleaguename #optional extension: render league logo
 				renderteamname	 #optional extension: render team logo
@@ -288,8 +289,10 @@ class BoutRender(object):
 		
 		#calculate frames needed for 30 second run length (*25? fps)
 		frames = 30*25
-		pixels_per_frame = crawl_height / frames	
-		
+		pixels_per_frame = float(crawl_height) / frames 
+		for i in range(frames):
+			renderoffset("cr_frm"+str(i)+".png",i*pixels_per_frame)	
+		ffmpeg cr_frm filename
 
 	def Tuple2Txt(self,tup):
 		return "rgba(%2d,%2d,%2d,255)" % tup

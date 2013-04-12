@@ -2,7 +2,8 @@
 # This is the Tkinter based interface code, which hopefully provides a front-end to dvd-chapter
 #
 
-import Tkinter as tk
+import Tkinter as Tk
+import tkColorChooser as Tkc
 import dvd-chapter as dc
 import tkSimpleDialog as SD
 
@@ -18,15 +19,15 @@ class TimingDialog(SD.Dialog):
 		topframe = Tk.Frame(master)
 		topframe.pack()
 		#do the ancillary info (Skateout, Halftime, Fulltime, Awards timing)
-		self.StartEntry = tk.Entry(topframe)
+		self.StartEntry = Tk.Entry(topframe)
 		self.StartEntry.pack()
-		self.SkateoutEntry = tk.Entry(topframe)
+		self.SkateoutEntry = Tk.Entry(topframe)
 		self.SkateoutEntry.pack()
-		self.HalftimeEntry = tk.Entry(topframe)
+		self.HalftimeEntry = Tk.Entry(topframe)
 		self.HalftimeEntry.pack()
-		self.FulltimeEntry = tk.Entry(topframe)
+		self.FulltimeEntry = Tk.Entry(topframe)
 		self.FulltimeEntry.pack()
-		self.AwardsEntry = tk.Entry(topframe)
+		self.AwardsEntry = Tk.Entry(topframe)
 		self.AwardsEntry.pack()
 		
 		#and now get the existing info from the passed data:
@@ -76,7 +77,8 @@ class JamsDialog(SD.Dialog):
 				#option menu messing
 				self.JamEntries[i]=Tk.IntVar( #really? need to know if I can return *numbers* and display *names* for options
 				Tk.OptionMenu(jamframes[i],self.data[1].Team1.Skaters[0],*(self.data[1].Team1.Skaters) ) #data[1] is the Bout struct for this bout
-			
+			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
+			self._add_eventrow(jamframes[i],self.JamEntries[i])
 			#and add the button for events (see below for callback)
 			eventbut = Tk.Button(self.JamFrames[i],text="Add Event Row",command=self.add_eventrow(jamframes[i],self.JamEntries[i])
 			eventbut.pack(Tk.RIGHT)
@@ -85,13 +87,15 @@ class JamsDialog(SD.Dialog):
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
 			jentry[0] = jam.Time
 			jentry[1] = jam.Jammer1 #etc
-			
-			for event in jam:
+			jentry[-1][0].insert(0,event.Time)
+			jentry[-1][1].insert(0,event.Team)
+			jentry[-1][2].set(event.Type)
+			for event in jam.Events[1:]:
 				#identify type, unpack
 				self._add_eventrow(jframe,jentry)
 				#this row is always the last one, so
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
-				jentry[-1][1].intsert(0,event.Team) #the second entry box is the Team ID
+				jentry[-1][1].insert(0,event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
 
 	def add_eventrow(self,frame,entry):
@@ -118,13 +122,16 @@ class JamsDialog(SD.Dialog):
 			j = dc.Jam()
 			j.Time = jam_entry[0].get()
  			#and so on
-			j.
+ 			
+			j.Events = []
 			#then do events!
 			for event_entry in jam_entry[7:]:
 				e = dc.Event()
 				e.Time = event_entry[0].get()
 				e.Team = event_entry[1].get()
 				e.Type = event_entry[2].get()
+				j.Events.append(e)
+				
 			self.data[0].append(j)
 
 class OfficialsDialog(SD.Dialog):
@@ -174,6 +181,13 @@ class OfficialsDialog(SD.Dialog):
 			self.data.append(s)
 
 class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an existing Team structure if one is available for the Team 
+	def colourcallback(self) 
+		#call a colour picker dialog and then get the resultant colour (and make the button that called us change to that colour)
+		(colourtuple,rgbcol) = Tkc.askcolor(self.TeamHex)
+		self.TeamCol = colourtuple
+		self.TeamHex = rgbcol
+		#self.TeamColButton.config(bg = rgbcol) #can't get this to work and set the button colour 
+		
 	def body(self,master):
 		#where we stick our custom body (master is the frame we're given)
 		topframe = Tk.Frame(master)
@@ -181,6 +195,11 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		Tk.Label(topframe,text="League").pack(side=Tk.LEFT)
 		self.LeagueEntry = Tk.Entry(topframe)
 		self.LeagueEntry.pack(side=Tk.LEFT)
+		self.TeamEntry = Tk.Entry(topframe)
+		self.TeamEntry.pack(side=Tk.LEFT)
+		self.TeamCol = (255,255,255)
+		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=colourcallback) #colourpicker
+		self.TeamColButton.pack(side=Tk.LEFT)
 		self.SkaterEntries = []
 		for i in range(24):
 			s = Tk.Frame(master)
@@ -200,8 +219,10 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		#and unpack data if we were given it
 		if self.data is not None:
 			self.LeagueEntry.delete(0,Tk.END)
-			self.LeagueEntry.insert(0,data.LeagueName)
-			
+			self.LeagueEntry.insert(0,self.data.LeagueName)
+			self.TeamEntry.delete(0,Tk.END)
+			self.TeamEntry.insert(0,self.data.TeamName)
+			self.TeamCol = self.data.TeamCol
 			for (s,se) in zip(self.data.Skaters,self.SkaterEntries):
 				for i in range(2):
 					se[i].delete(0,Tk.END)
@@ -223,6 +244,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		#we probably want to do text field length validation on these
 		self.data.LeagueName = self.LeagueEntry.get()		
 		self.data.TeamName = self.TeamEntry.get()
+		self.data.TeamCol...
 		self.data.Skaters = []
 		for skate_entry in self.SkaterEntries:
 			if skate_entry[0] == "" then break #detect blank line, which means end of list

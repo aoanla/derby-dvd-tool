@@ -22,15 +22,17 @@ menufont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf
 
 #Structure
 
-def Bout(object):
+class Bout(object):
 	def __init__(self):
+		self.Name = None
 		self.Teams = [] #team 1,2
 		self.Officials = []
 		self.Jams = []
 		#self.Timeouts = []
 		self.Timing = Timing()
+		self.NeutralCol = (200,200,200)
 
-def Timing(object):
+class Timing(object):
 	def __init__(self):
 		self.Start = None
 		self.Skateout = None
@@ -38,13 +40,14 @@ def Timing(object):
 		self.Fulltime = None
 		self.Awards = None
 
-def Team(object):
+class Team(object):
 	def __init__(self):
 		self.LeagueName = ""
 		self.TeamName = ""
+		self.TeamCol = (255,255,255) #R,G,B tuple
 		self.Skaters = []
 
-def Skater(object):
+class Skater(object):
 	def __init__(self):
 		self.Skatename = ""
 		self.Number = ""
@@ -59,7 +62,7 @@ BENCH = 3
 LINEUP = 4
 
 
-def Official(object):
+class Official(object):
 	def __init__(self):
 		self.Name = ""
 		self.Number = ""
@@ -71,18 +74,18 @@ JAM=1
 IPR=2
 OPR=3
 
-def Jam(object):
+class Jam(object):
 	def __init__(self):
 		self.StartTime = ""
-		self.Period = 0
-		self.Jam = 0
+		self.Period = '0'
+		self.Jam = '0'
 		self.Jammers = [] #refs to Skaters, Team1,Team2
 		self.Pivots = [] #refs to Pivots, Team1, Team2
 		self.Score = [] #numerical scores to Team1,Team2
 		self.Events = [] #contains the moments of Lead Jammer, Power Jam start/end, Star Pass
 		#self.EndTime = ""
 
-def Event(object):
+class Event(object):
 	def __init__(self):
 		self.Time = ""
 		self.Team = None #0 or 1 for Team 1 or 2
@@ -94,6 +97,20 @@ POWERSTART = 1
 POWEREND = 2
 STAR = 3
 
+
+class Status(object):
+	#An integral of Event objects within a jam
+	def __init__(self, eventseq):
+		tr_dict = (LEAD:LEADSTATUS,POWERSTART:POWER_STATUS,POWEREND:(POWER_STATUS*-1),STAR:STAR_STATUS)
+		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
+		self.Teams = [0,0]
+		for e in eventseq:
+			self.Teams[e.Team] += tr_dict[e.Type]
+			
+#masks for Status
+LEAD_STATUS=1
+POWER_STATUS=2
+STAR_STATUS=3
 
 #Functions of the Bout Render class render a contained Bouts object
 
@@ -133,17 +150,17 @@ class BoutRender(object):
 	        draw = ImageDraw.Draw(im);
 		return draw, im
 	
-	def makeScoreSubImage (filename, Status):
+	def makeScoreSubImage (filename, boutnum,jamnum):
 		"""make a 3colour png for the Scoreline, at top of display"""
 		#needs to make
 		#
 		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
 		d,i = initSubImage()
-		string1 = '{:<20}'.format(Teams[Status.Team1.ID]["Name"]) 
-		string1 += '  ' + '{0:<3}'.format(Status.Team1.Score)
-		string2 += 'P' + Status.Period + 'J' + '{:<2}'.format(Status.Jam)
-		string3 += '{0:<3}'.format(Status.Team2.Score)
-		string3 += '  ' + '{:>20}'.format(Teams[Status.Team2.ID]["Name"])
+		string1 = '{:<20}'.format(self.Bouts[boutnum].Teams[0].TeamName) 
+		string1 += '  ' + '{0:<3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
+		string2 += 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{:<2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
+		string3 += '{0:<3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[1])
+		string3 += '  ' + '{:>20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
 		#regularise team name + score lines to standard length
 		drawoutlinedtext(d,6,22,string1,font,2,3)
@@ -151,7 +168,7 @@ class BoutRender(object):
 		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),22,string3,font,2,3)
 		i.save( filename, "PNG", transparency=1)
 	
-	def makeJammerSubImage (filename, Status):
+	def makeJammerSubImage (filename, boutnum,jamnum,status):
 		"""make a 3colour png for the Jammerline, at bottom of display"""
 		#needs to make
 		#
@@ -159,7 +176,10 @@ class BoutRender(object):
 		d,i = initSubImage()
 		#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
 		#consider wrapping names in that case, using the textwrap.wrap(text,width) method
-		jammers = (Teams[Status.Team1.ID]["Skaters"][Status.Team1.Jammer],(Teams[Status.Team1.ID]["Skaters"][Status.Team2.Jammer])
+			
+		#status is an integration of the events up to + including the current event (so Star Passes stick, etc)
+		#if status.Team[n] & STAR_STATUS then use Pivot[n] instead
+		jammers = (self.Bouts[boutnum].Jams[jamnum].Jammers[0],self.Bouts[boutnum].Jams[jamnum].Jammers[1])
 		string1 = '{:<25}'.format(jammers[0])
 		string2 = '{:>25}'.format(jammers[1])
 		drawoutlinedtext(d,6,550,string1,font,2,3)
@@ -193,6 +213,7 @@ class BoutRender(object):
 		#  C C C C
 		#  B     N
 		# and needs to know if needs N (if last Chapter is in the list then we don't need it)
+		#  								(we replace it with a link to Credits)
 		d,i = initSubImage()
 		
 		#render blocks of 4, width=10 chars + 2 char padding
@@ -214,7 +235,7 @@ class BoutRender(object):
 		numlines = 5 #intro and outro padding
 		for B in self.Bouts:
 			#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
-			numlines += sum([len(s["Skaters"])+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
+			numlines += sum([len(s.Skaters)+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
 			numlines += len(b.Officials)+3 #num of skaters + 1 for title + 2 for spacing
 			numlines += 2 #for spacing
 		
@@ -230,8 +251,8 @@ class BoutRender(object):
 			for t in b.Teams:
 				renderleaguename #optional extension: render league logo
 				renderteamname	 #optional extension: render team logo
-			for s in Teams["Skaters"]:
-				renderskater, captains first, benchstaff last
+				for s in t.Skaters:
+					renderskater, captains first, benchstaff last
 				render2blanks
 			for o in b.Officials:
 				renderofficial, headref first, titles!
@@ -241,13 +262,31 @@ class BoutRender(object):
 
 
 
-	def AddChapter(ChapterList,Time,Name):
+	def GenChapters(self):
 		#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
 		#Credits are *not* a Chapter, they are a separately rendered title
-		return ChapterList.append({"T":Time,"N":Name})
+		self.ChapList = []
+		for b in self.Bouts:
+			bname = ""
+			if b.Name is None:
+				bname = b.Name
+			else: #construct bout name from Team names
+				bname = b.Teams[0].TeamName + " v " + b.Teams[1].TeamName
+			self.ChapList.append([b.Timing.Start,bname)
+			self.ChapList.append([b.Timing.Skateout,"Skateout")
+			for j in [j for j in b.Jams if j.Period == "1"]:
+				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
+			#first period jams here
+			self.ChapList.append([b.Timing.Halftime,"Halftime")
+			#second period jams here
+			for j in [j for j in b.Jams if j.Period == "2"]:
+				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
+			self.ChapList.append([b.Timing.Fulltime,"Fulltime")
+			self.ChapList.append([b.Timing.Awards,"Skater Awards")
+
 	
 	
-	def Serialise(ChapterList, baseimg):
+	def Serialise(self,baseimg):
 		#this will write out the entire movie now, so execute last of all Serialisers
 		#it needs the credits done, as well as the movie subtitles muxed, including the main menu + subtitles menu
 		#we make the chapter menu vobs here, as it's convenient to generate the menus while we generate the dvdauthor xml
@@ -280,12 +319,16 @@ class BoutRender(object):
 		#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere
 		ffmpeg -loop 1 -shortest -y -i menubackdrop.jpg -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg	
 		#then make lots of chapter menus with it
-		for block of 8 chapters:
+		
+		self.GenChapters() #make our chapters
+		l = len(self.ChapList)-1
+		for i in range(0,l,8):
+			block = self.ChapList[i:(i+8)]
 			#make 3 subpictures (4x2 arrangement) - normal, highlight, select
-			if last block, last = True #removes "Next" button
-			if first block, first = True #changes "Prev" button target to the main menu
-			fname="chaptermenu"+str(blocknum)
-			makemenuSubImage(fname,block,last)
+			if i > (l-8) :  last = True #removes "Next" button
+			if i == 0 : first = True #changes "Prev" button target to the main menu
+			fname="chaptermenu"+str(i//8)
+			makeMenuSubImage(fname,block,last)
 			#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
 			#remember to add autobutton detection, in row then column mode
 			"<subpictures><stream>\n"
@@ -297,10 +340,14 @@ class BoutRender(object):
 			#outputthe xml for this menu for dvdauthor (this is where the actions come in)
 	
 			"<pgc>\n"
-			for chapter in block:
-				"<button>jump chapter" + chapter.index + ";</button>\n"
-			"<button>jump menu" prev chaptermenu or main menu if first + ";</button>\n"
-			if not last "<button> jump menu" next chaptermenu + ";</button>\n"
+			for (chapter,index) in zip(block,range(i,i+8)):
+				"<button>jump chapter" + index + ";</button>\n"
+				"<button>" 
+				if not first: + "jump menu " + str(i//8) #assuming menus start at 1
+				else: "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
+				";</button>\n"
+				if not last : "<button> jump menu" + str((i//8)+1) ";</button>\n" #assuming menus start at 1 
+				else: "<button>jump title 2</button>\n" # credits as a separate title
 			'<vob file="'+fname+'.mpg" />' + "\n"
 	
 			"</pgc>\n"
@@ -327,22 +374,28 @@ class BoutRender(object):
 		subprocess.call("dvdauthor -x auth.xml", shell=True)
 		subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
 
+def GT_Times(one,two):
+	"""Compare two times in HH:MM:SS format, return True if one > two"""
+	(H1,M1,SU1) = [int(i) for i in one.split(':')]
+	(H2,M2,SU2) = [int(i) for i in two.split(':')]
+	if H1 > H2 return True
+	if M1 > M2 return True
+	if SU1 > SU2 return True
+	return False
+
 #a bouts subtitler class
 class JamSubs(object):
 	def __init__(self,Bouts):
 		self.Bouts = Bouts
 		#yes we do need to iterate over potentially more than one bout
-
-	def AddChange(JamDelta):
-		#make change to "core list", and update only the subtitle streams we need to (can we store changes as diffs internally??)
-		# Deltas are always Jammerlines (and thus always ScoreJammerlines), as we only change the Scoreline on new jams. Just store Deltas and detect *Scorelines* as being also *Chapters* (since Chapters are also on new Jams)
-
-	def AddSpumuxxml(spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
+	def Tuple2Txt(self,tup):
+		return "rgba(%2d,%2d,%2d,255)" % tup
+	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
 		spumuxxmls += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
 		spumuxxmls += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Team1Colour + '" e2="' + NeutralColour + '" />' + "\n"
-		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + Team2Colour + '" e2="' + NeutralColour + '" />' + "\n"
+		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
 		#Above does the below pseudocode, with a suitably patched spumux binary(!)
 		#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 		#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
@@ -366,46 +419,56 @@ class JamSubs(object):
 		#		do Jammerline
 		#		do ScoreJammerline
 
-		for Delta in self.JamDeltas:
-			Status.Update(Delta)
+		for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
 			#update Score
            #Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
            #Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam
            #Therefore ScoreJammerlines are precisely as frequent as Jammerlines, as each Scoreline also has a Jammerline
            #Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
            # more than one bout in a DVD) with Scorelines
-			if (also a chapter): #then it's a scoreline
-				spuframe[0] += 1 #increment number of Scoreline frames
-				outname[0] = "Scoreline" + str(spuframe[0]) + ".png"
-				makeScoreSubImage(outname[0],Status)
-				endtime = next Chapter after this
-				self.AddSpumuxxml(spumuxxmls[0],Status.Starttime,endtime,outname[0],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
+			 #then it's a scoreline
+			spuframe[0] += 1 #increment number of Scoreline frames
+			outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
+			makeScoreSubImage(outname[0],boutnum,i)
+			#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
+			if Jam.Period = "1":
+				jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
+			elif Jam.Period = "2":  
+				jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
+			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
+				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period #if not, then halftime is in the way
+					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
+					
+			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
-			#update Jammer (always)
-			spuframe[1] += 1 #increment number of Jammerline frames
-			#also represent LJ,PJ,SP status somehow (icon? bold/italics?)
-			printline (Status.Team1.Jammer, location, Status.Team.Colour)
-			printline (Status.Team2.Jammer, location2, Status.Team.Colour)
-			outname[1] = "Jammerline" + str(spuframe[1]) + ".png"
-			makeJammerSubImage(outname[1],Status)
-			self.AddSpumuxxml(spumuxxmls[1],Status.Starttime,Status.Endtime,outname[1],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
+			for j in range(len(Jam.Events)):
+				status = Status(Jam.Events[0:j])
+				#update Jammer (always)
+				spuframe[1] += 1 #increment number of Jammerline frames
+				outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframe[1]) + ".png"
+				makeJammerSubImage(outname[1],boutnum,i,status)
+				#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
+				endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
+				if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
+					endtime = Jam.Events(j+1).Time
+				self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
-			#update JammerScore
-			# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)
-			spuframe[2] += 1
-			outname[2] = "JammerScoreline" + str(spuframe[2]) + ".png"
-			#call convert(?) to smoosh the two pngs together into the third
-			try:
-				retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
-				if retcode < 0:
-					print >>sys.stderr, "Child was terminated by signal", -retcode
-			except OSError as e:
-				print >>sys.stderr, "Execution failed:", e
+				#update JammerScore
+				# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
+				spuframe[2] += 1
+				outname[2] = "JammerScoreline" + str(boutnum) + str(spuframe[2]) + ".png"
+				#call convert(?) to smoosh the two pngs together into the third
+				try:
+					retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
+					if retcode < 0:
+						print >>sys.stderr, "Child was terminated by signal", -retcode
+				except OSError as e:
+					print >>sys.stderr, "Execution failed:", e
 
-			self.AddSpumuxxml(spumuxxmls[2],Status.Starttime,Status.Endtime,outname[2],Status.NeutralColour,Status.Team1.Colour,Status.Team2.Colour)
-
+				self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+	
 		#and close the xml streams
-		spumuxxmls = [i+"</stream>\n</subpictures>\n" for in spumuxxmls]
+		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
 
 		#write spumuxxmls to files
 
@@ -427,37 +490,3 @@ class JamSubs(object):
 	#to do: decide if we need this class, or just move it into the Bout Render class (either way, we need to rationalise the location of the functions of this class
 	# and the functions of Bout Render (some of which are called by, and share state with, the functions here...)
 
-def WriteDVDxml():
-<dvdauthor>
-<vmgm></vmgm>
-<titleset>
-<menus>
-<video format="pal" aspect="4:3" resolution="720x576"/>
-<audio format="ac3" channels="2"/>
-<pgc entry="root">
-<button>subtitle=64; jump title 1;</button>
-<button>subtitle=65; jump title 1;</button>
-<vob file="menu.mpg"/>
-</pgc>
-</menus>
-#more menus than this
-
-<titles>
-#aspect ratio probably 16:9
-<video format="pal" aspect="4:3"/>
-<audio format="mp2" channels="2"/>
-<subpicture lang="en"/>
-<subpicture lang="it"/>
-<pgc>
-<vob file="bout012.mpg" pause="6"/>
-<post>call menu;</post>
-</pgc>
-</titles>
-</titleset>
-</dvdauthor>
-#write this to auth.xml
-
-#and author
-subprocess.call("dvdauthor -o mydvd -x auth.xml", shell=True)
-#and iso
-mkisofs -r -V "nameofdvd" -dvd-video -o "nameofdvd.iso" mydvd

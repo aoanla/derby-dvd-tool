@@ -84,18 +84,34 @@ class JamsDialog(SD.Dialog):
 			jamframes.append(Tk.Frame(f)) #this is the containing frame for the initial row + event rows we dynamically add
 			jamframes[i].pack()
 			#add initial entry boxes:
-			for j in range(7):
-				#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
-				#Period, Jam must be strings
-				#Time
-				self.JamEntries[i].append(Tk.Entry(jamframes[i]))
-				self.JamEntries[i][j].pack(side=Tk.LEFT)
-				#Period, Jam
-				
-				#Jammer1
-				self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-				Tk.OptionMenu(jamframes[i],self.JamEntries[i],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
-				
+			#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
+			#Period, Jam must be strings
+			#Time
+			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
+			self.JamEntries[i][-1].pack(side=Tk.LEFT)
+			#Period, Jam
+			self.JamEntries[i].append(Tk.StringVar())
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],"1","2").pack(side=Tk.LEFT)
+			self.JamEntries[i].append(Tk.StringVar())
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*[str(j) for j in range(1,30)]).pack(side=Tk.LEFT)			
+			#Jammer1
+			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
+			#Pivot1
+			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
+			#Score 1
+			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
+			self.JamEntries[i][-1].pack(side=Tk.LEFT)
+			#Jammer2
+			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=Tk.LEFT) #jammernames[1] contains Team2's list of Skatenames
+			#Pivot2
+			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
+			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=Tk.LEFT) #jammernames[1] contains Team2's list of Skatenames
+			#Score 2
+			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
+			self.JamEntries[i][-1].pack(side=Tk.LEFT)
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
 			self._add_eventrow(jamframes[i],self.JamEntries[i])
 			#and add the button for events (see below for callback)
@@ -105,9 +121,14 @@ class JamsDialog(SD.Dialog):
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
 			jentry[0].insert(0,jam.Time)
-			
-			jentry[4].set(jam.Jammer1) #etc
-			
+			jentry[1].set(jam.Period)
+			jentry[2].set(jam.Jam)
+			jentry[3].set(jam.Jammer[0]) #etc
+			jentry[4].set(jam.Pivot[0])
+			jentry[5].insert(0,jam.Score[0])
+			jentry[6].set(jam.Jammer[1]) #etc
+			jentry[7].set(jam.Pivot[1])
+			jentry[8].insert(0,jam.Score[1])
 			jentry[-1][0].insert(0,event.Time)
 			jentry[-1][1].insert(0,event.Team)
 			jentry[-1][2].set(event.Type)
@@ -142,11 +163,18 @@ class JamsDialog(SD.Dialog):
 		for jam_entry in self.JamEntries:
 			j = dc.Jam()
 			j.Time = jam_entry[0].get()
+			j.Period = jam_entry[1].get()
+			j.Jam = jam_entry[2].get()
  			#and so on
- 			j.Jammer[0] = children["menu"].index(v.get())
+ 			j.Jammer[0] = jam_entry[3].get()
+ 			j.Pivot[0] = jam_entry[4].get()
+ 			j.Score[0] = jam_entry[5].get()
+ 			j.Jammer[1] = jam_entry[6].get()
+ 			j.Pivot[1] = jam_entry[7].get()
+ 			j.Score[1] = jam_entry[8].get()
 			j.Events = []
 			#then do events!
-			for event_entry in jam_entry[7:]:
+			for event_entry in jam_entry[9:]:
 				e = dc.Event()
 				e.Time = event_entry[0].get()
 				e.Team = event_entry[1].get()

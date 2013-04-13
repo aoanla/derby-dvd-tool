@@ -130,7 +130,7 @@ class BoutRender(object):
 		self.Bouts = Bouts
 		self.Extracredits=Extracredits
 		
-	def drawoutlinedtext(self,drawhandle,x,y,text, font, outlinecol, textcol):
+	def drawoutlinedtext(self,draw,x,y,text, font, outlinecol, textcol):
 		"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
 		
 		draw.text((x-1, y), text, font=font, fill=outlinecol)
@@ -144,10 +144,10 @@ class BoutRender(object):
 		w, h = draw.textsize(text,font=font)
 		return x-w #shift "rightaligned location" back by length of text
 	
-	def getcentredloc(self,draw,text,font):
+	def getcentredloc(self,draw,text,font,x=width/2):
 		"""Correct width location so text is centred (PIL only does left)"""
 		w, h = draw.textsize(text,font=font)
-		return (width-w)/2 #shift "centred location" back by 1/2 length of text
+		return x-(w/2) #shift "centred location" back by 1/2 length of text
 	
 	def initSubImage():
 		"""Initalise the PIL canvas for a new SubImage"""
@@ -221,6 +221,9 @@ class BoutRender(object):
 		#this does 
 		#      blank top of screen until low down row
 		#     [Play] [Chapters] [Subtitles]
+		d,i = self.initSubImage()
+		spacing = width / 4
+		x = self.getcentredloc(d,"Some text",font,x)
 
 	def makeSubtitlesSubImage(self,filename):
 		"""Make the Subtitles menu, from the standard Subtitles subimages + a source backdrop"""
@@ -239,7 +242,8 @@ class BoutRender(object):
 		#  B     N
 		# and needs to know if needs N (if last Chapter is in the list then we don't need it)
 		#  								(we replace it with a link to Credits)
-		d,i = initSubImage()
+		d,i = self.initSubImage()
+		spacing = width / 5
 		
 		#render blocks of 4, width=10 chars + 2 char padding
 		#normal image is called filename+"n.png"

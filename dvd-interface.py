@@ -75,6 +75,8 @@ class JamsDialog(SD.Dialog):
 
 		jamframes = []		
 		self.JamEntries = []
+		
+		jammernames = ([s.Skatename for s in self.data[1].Team1.Skaters],[s.Skatename for s in self.data[1].Team2.Skaters])
 		for i in range(25): #initial set of rows for jams
 			#So initial row is [Time HH:MM:SS.HH] [Period] [Jam] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
 			# and the [Add Event] adds an Event row under the current row
@@ -84,11 +86,16 @@ class JamsDialog(SD.Dialog):
 			#add initial entry boxes:
 			for j in range(7):
 				#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
+				#Period, Jam must be strings
+				#Time
 				self.JamEntries[i].append(Tk.Entry(jamframes[i]))
 				self.JamEntries[i][j].pack(side=Tk.LEFT)
-				#option menu messing
-				self.JamEntries[i]=Tk.IntVar( #really? need to know if I can return *numbers* and display *names* for options
-				Tk.OptionMenu(jamframes[i],self.data[1].Team1.Skaters[0],*(self.data[1].Team1.Skaters) ) #data[1] is the Bout struct for this bout
+				#Period, Jam
+				
+				#Jammer1
+				self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
+				Tk.OptionMenu(jamframes[i],self.JamEntries[i],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
+				
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
 			self._add_eventrow(jamframes[i],self.JamEntries[i])
 			#and add the button for events (see below for callback)
@@ -97,8 +104,10 @@ class JamsDialog(SD.Dialog):
 
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
-			jentry[0] = jam.Time
-			jentry[1] = jam.Jammer1 #etc
+			jentry[0].insert(0,jam.Time)
+			
+			jentry[4].set(jam.Jammer1) #etc
+			
 			jentry[-1][0].insert(0,event.Time)
 			jentry[-1][1].insert(0,event.Team)
 			jentry[-1][2].set(event.Type)
@@ -134,7 +143,7 @@ class JamsDialog(SD.Dialog):
 			j = dc.Jam()
 			j.Time = jam_entry[0].get()
  			#and so on
- 			
+ 			j.Jammer[0] = children["menu"].index(v.get())
 			j.Events = []
 			#then do events!
 			for event_entry in jam_entry[7:]:
@@ -209,7 +218,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		self.LeagueEntry.pack(side=Tk.LEFT)
 		self.TeamEntry = Tk.Entry(topframe)
 		self.TeamEntry.pack(side=Tk.LEFT)
-		self.TeamCol = (255,255,255)
+		self.TeamCol = (255,0,0)
 		self.TeamHex = "#ffffff"
 		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=colourcallback) #colourpicker
 		self.TeamColButton.pack(side=Tk.LEFT)
@@ -258,7 +267,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		#we probably want to do text field length validation on these
 		self.data.LeagueName = self.LeagueEntry.get()		
 		self.data.TeamName = self.TeamEntry.get()
-		self.data.TeamCol...
+		self.data.TeamCol = self.TeamCol
 		self.data.Skaters = []
 		for skate_entry in self.SkaterEntries:
 			if skate_entry[0] == "" then break #detect blank line, which means end of list

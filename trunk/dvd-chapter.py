@@ -156,9 +156,13 @@ def initSubImage():
 	return draw, im
 
 class BoutRender(object):
-	def __init__(self,Bouts,Extracredits=""):
+	def __init__(self,Bouts,Extracredits="",movie="bout.mpg",mainsrc="main.jpg",chpsrc="menu.jpg",creditmusic="creditmusic.ogg"):
 		self.Bouts = Bouts
 		self.Extracredits=Extracredits
+		self.Movie=movie
+		self.MainSrc=mainsrc
+		self.ChpSrc=chpsrc
+		self.CreditMusic=creditmusic
 			
 	def makeScoreSubImage (self,filename, boutnum,jamnum):
 		"""make a 3colour png for the Scoreline, at top of display"""
@@ -219,7 +223,7 @@ class BoutRender(object):
 	def makeMainMenu(self):
 		"""Make the main menu, from a standard backdrop"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i main.jpg -i /usr/share/devede/silence.ogg -target dvd main.mpg",shell=True)
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i " +self.MainSrc+" -i /usr/share/devede/silence.ogg -target dvd main.mpg",shell=True)
 		#make subimages
 		self.makeMainMenuSubImage("main")
 		#mux
@@ -254,7 +258,7 @@ class BoutRender(object):
 	def makeSubtitlesMenu(self):
 		"""Make the Subtitles selection menu, from standard backdrop + subtitle menus"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i subtitles.jpg -i /usr/share/devede/silence.ogg -target dvd subtitles.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc + " -i /usr/share/devede/silence.ogg -target dvd subtitles.mpg",shell=True)	
 		#make subimages
 		self.makeSubtitlesSubImage("subtitles")
 		#mux
@@ -426,9 +430,9 @@ class BoutRender(object):
 			display = im.crop([0,i*pixels_per_frame,width,i*pixels_per_frame+height])
 			scratch = Image.new('RGB',(width,height))
 			scratch.paste(display)
-			scratch.save("cr_frm"+str(i)+".png",'PNG')		
-	
-		ffmpeg cr_frm filename
+			scratch.save("cr_frm"+'{0:04d}'.format(i)+".png",'PNG')		
+		#and make movies -r 25 = 25fps, -t 30 = 30 seconds duration
+		subprocess.call("ffmpeg -f image2 -r 25 -i cr_frm%04d.png -i "+ self.CreditMusic +" -target dvd -t 30"+ filename,shell=True)
 
 	def Tuple2Txt(self,tup):
 		return "rgba(%2d,%2d,%2d,255)" % tup
@@ -514,7 +518,7 @@ class BoutRender(object):
 
 		#write spumuxxmls to files
 		#and mux with spumux
-		moviefile = "bout"
+		
 		for i in range(len(spumuxxmls)):
 			#write out config
 			f = open("spumux.xml",'w')
@@ -522,15 +526,16 @@ class BoutRender(object):
 			f.flush()
 			f.close()
 			#setup file & mux
-			outfile = moviefile + str(num)
+			bits = self.Movie.split('.')
+			outfile = bits[0] + str(num) + bits[1]
 			try:
-				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + moviefile + ".mpg > " + outfile + ".mpg", shell=True)
+				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + self.Movie + ".mpg > " + outfile + ".mpg", shell=True)
 				if retcode < 0:
 					print >>sys.stderr, "Child was terminated by signal", -retcode
 			except OSError as e:
 				print >>sys.stderr, "Execution failed:", e
 			#new input is old output
-			moviefile = outfile
+			self.Movie = outfile
 			
 		#At this point, we have a file called "bout012.mpg", which has bout.mpg muxed with the 3 subtitle files, hopefully
 	
@@ -600,7 +605,7 @@ class BoutRender(object):
 		dvdauthxml += "<menus>\n"
 		#start making chapter menus
 		#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere, and consider if input jpg is configurable
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i menubackdrop.jpg -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc +" -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg",shell=True)	
 		#then make lots of chapter menus with it
 		
 		self.GenChapters() #make our chapters
@@ -648,7 +653,7 @@ class BoutRender(object):
 		dvdauthxml += "<pgc>\n"
 		#hopefully this pre will load the selected subtitle into the "subtitle" system register
 		dvdauthxml += "<pre> s2 = g1; </pre>\n"
-		dvdauthxml += '<vob file="bout012.mpg" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
+		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"
 		#and add the credits as title 2

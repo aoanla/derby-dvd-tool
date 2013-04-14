@@ -34,11 +34,11 @@ class Bout(object):
 
 class Timing(object):
 	def __init__(self):
-		self.Start = None
-		self.Skateout = None
-		self.Halftime = None
-		self.Fulltime = None
-		self.Awards = None
+		self.Start = ""
+		self.Skateout = ""
+		self.Halftime = ""
+		self.Fulltime = ""
+		self.Awards = ""
 
 class Team(object):
 	def __init__(self):

@@ -6,6 +6,7 @@ import Tkinter as Tk
 import tkColorChooser as Tkc
 import dvd-chapter as dc
 import tkSimpleDialog as SD
+import pickle
 
 #consider a save function (can simply pickle the Bouts[] list, and a few other items for filenames etc)
 
@@ -402,10 +403,10 @@ class DerbyTK(object):
 		self.BR.RenderDVD()
 	
 	def save(self):
-		pickle(self.Bouts)
+		pickle.dump(self.Bouts,open("dvdtool.save","wb"))
 
 	def load(self):
-		unpickle(self.Bouts)
+		self.Bouts = pickle.load(open("dvdtool.save","rb"))
 
 	def mainWindow(self):
 		"""The Main Tkinter window interface"""

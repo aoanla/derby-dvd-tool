@@ -101,7 +101,7 @@ STAR = 3
 class Status(object):
 	#An integral of Event objects within a jam
 	def __init__(self, eventseq):
-		tr_dict = (LEAD:LEADSTATUS,POWERSTART:POWER_STATUS,POWEREND:(POWER_STATUS*-1),STAR:STAR_STATUS)
+		tr_dict = {LEAD:LEADSTATUS,POWERSTART:POWER_STATUS,POWEREND:(POWER_STATUS*-1),STAR:STAR_STATUS}
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
 		self.Teams = [0,0]
 		for e in eventseq:
@@ -310,7 +310,7 @@ class BoutRender(object):
 			ol = ctrl[1]
 			fg = ctrl[2]
 			spacing = width / 5
-			for c,j in zip(Chapters,range(0,8))
+			for c,j in zip(Chapters,range(0,8)):
 				string = '{0:^10.10}'.format(c[1]) #make a centred string from the chapter name, length 10
 				x = (j%4)*spacing #4 across
 				y = 100+(j//4 * 150) #2 down, starting highish
@@ -331,7 +331,7 @@ class BoutRender(object):
 		#select image is called filename+"s.png"
 		#highlight image is called filename+"h.png"
 	
-	def RenderCredits(self,Extracredits)
+	def RenderCredits(self,Extracredits):
 		"""Make a long png for the credits crawl to be rendered from"""
 		#first we need to collect metrics, as we need to make our image the right length
 		#this requires a "sacrificial" image to let us use the draw.textsize metric
@@ -385,7 +385,7 @@ class BoutRender(object):
 					#wrap skatername and number in 27 line space
 					snspace = 27 - (len(number)+3) #space for skatename after making room for number
 					nt = textwrap.wrap(s.Skatename,snspace)
-					sp,np=[str(snsspace),str(27-snspace)
+					sp,np=[str(snsspace),str(27-snspace)]
 					formatting = '{0:>27:27} {1:<'+sp+'.'+sp+'}{2:>'+np+'.'+np+'}'
 					lines = [formatting.format(*a) for a in longzip([tt,nt,['('+number+')',]])]
 					for line in txtlines:
@@ -477,12 +477,12 @@ class BoutRender(object):
 			outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
 			makeScoreSubImage(outname[0],boutnum,i)
 			#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
-			if Jam.Period = "1":
+			if Jam.Period == "1":
 				jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
-			elif Jam.Period = "2":  
+			elif Jam.Period == "2":  
 				jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
 			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
-				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period #if not, then halftime is in the way
+				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
 					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
 					
 			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
@@ -552,17 +552,17 @@ class BoutRender(object):
 				#contract using initialisms for team names
 				i = lambda s : ''.join([w[0] for w in s.split(" ")]) 
 				bname = i(b.Teams[0].TeamName) + " v " + i(b.Teams[1].TeamName)
-			self.ChapList.append([b.Timing.Start,bname)
-			self.ChapList.append([b.Timing.Skateout,"Skateout")
+			self.ChapList.append([b.Timing.Start,bname])
+			self.ChapList.append([b.Timing.Skateout,"Skateout"])
 			for j in [j for j in b.Jams if j.Period == "1"]:
 				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
 			#first period jams here
-			self.ChapList.append([b.Timing.Halftime,"Halftime")
+			self.ChapList.append([b.Timing.Halftime,"Halftime"])
 			#second period jams here
 			for j in [j for j in b.Jams if j.Period == "2"]:
 				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
-			self.ChapList.append([b.Timing.Fulltime,"Fulltime")
-			self.ChapList.append([b.Timing.Awards,"Awards")
+			self.ChapList.append([b.Timing.Fulltime,"Fulltime"])
+			self.ChapList.append([b.Timing.Awards,"Awards"])
 
 	
 	
@@ -639,7 +639,7 @@ class BoutRender(object):
 				if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
 				else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
 				dvdauthxml += ";</button>\n"
-				if not last : dvdauthxml += "<button> jump menu" + str((i//8)+1) ";</button>\n" #assuming menus start at 1 
+				if not last : dvdauthxml += "<button> jump menu" + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
 				else: dvdauthxml += "<button>jump title 2</button>\n" # credits as a separate title
 			dvdauthxml += '<vob file="'+fname+'.mpg" />' + "\n"
 	
@@ -677,9 +677,9 @@ def GT_Times(one,two):
 	"""Compare two times in HH:MM:SS format, return True if one > two"""
 	(H1,M1,SU1) = [int(i) for i in one.split(':')]
 	(H2,M2,SU2) = [int(i) for i in two.split(':')]
-	if H1 > H2 return True
-	if M1 > M2 return True
-	if SU1 > SU2 return True
+	if H1 > H2 : return True
+	if M1 > M2 : return True
+	if SU1 > SU2 :return True
 	return False
 
 

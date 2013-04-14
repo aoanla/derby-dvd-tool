@@ -77,7 +77,7 @@ class JamsDialog(SD.Dialog):
 		jamframes = []		
 		self.JamEntries = []
 		
-		jammernames = ([s.Skatename for s in self.data[1].Team1.Skaters],[s.Skatename for s in self.data[1].Team2.Skaters])
+		jammernames = ([s.Skatename for s in self.data[1].Teams[0].Skaters],[s.Skatename for s in self.data[1].Teams[1].Skaters])
 		for i in range(25): #initial set of rows for jams
 			#So initial row is [Time HH:MM:SS.HH] [Period] [Jam] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
 			# and the [Add Event] adds an Event row under the current row
@@ -116,8 +116,8 @@ class JamsDialog(SD.Dialog):
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
 			self._add_eventrow(jamframes[i],self.JamEntries[i])
 			#and add the button for events (see below for callback)
-			eventbut = Tk.Button(self.JamFrames[i],text="Add Event Row",command=self.add_eventrow(jamframes[i],self.JamEntries[i])
-			eventbut.pack(Tk.RIGHT)
+			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(jamframes[i],self.JamEntries[i]))
+			eventbut.pack(side=Tk.RIGHT)
 
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
@@ -149,10 +149,11 @@ class JamsDialog(SD.Dialog):
 		f = Tk.Frame(frame)
 		f.pack()
 		row.append(Tk.Entry(f)) #TIME
-		row.pack(side=Tk.LEFT)
+		row[-1].pack(side=Tk.LEFT)
 		row.append(Tk.Entry(f)) #Team number (validate this as a number on submit, or even on entry...)
-		row.pack(side=Tk.LEFT)		
-		row.append(Tk.IntVar(dc.LEAD))  #Radio Buttons for Event type, default value Lead Jammer call
+		row[-1].pack(side=Tk.LEFT)		
+		row.append(Tk.IntVar())  #Radio Buttons for Event type, default value Lead Jammer call
+		row[-1].set(dc.LEAD)
 		decode = ("Lead Jammer","Power Jam Starts", "Power Jam Ends", "Star Pass")
 		for i in range(dc.STAR+1):
 			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i).pack(side=Tk.RIGHT)
@@ -200,11 +201,12 @@ class OfficialsDialog(SD.Dialog):
 				ss.pack(side=Tk.LEFT)
 				self.OfficialEntries[i].append(ss)
 			#and radio buttons for roles
-			self.OfficialEntries.append(Tk.IntVar(dc.JAM))
-			self.OfficialEntries.append([])
+			self.OfficialEntries[i].append(Tk.IntVar())
+			self.OfficialEntries[i][-1].set(dc.JAM)
+			self.OfficialEntries[i].append([])
 			decode = ("Head Ref","Jam Ref","IPR","OPR")
 			for j in range(dc.OPR+1):
-				r = Tk.Radiobutton(s,text=decode[j],variable=self.SkaterEntries[i][2],value=j)
+				r = Tk.Radiobutton(s,text=decode[j],variable=self.OfficialEntries[i][2],value=j)
 				r.pack(side=Tk.RIGHT)
 		
 		#and unpack data if given it
@@ -223,7 +225,7 @@ class OfficialsDialog(SD.Dialog):
 		#if data is None:
 		self.data = []
 		for official_entry in self.OfficialEntries:
-			if official_entry[0].get() = "" then break #end of list signalled by blank name
+			if official_entry[0].get() == "" : break #end of list signalled by blank name
 			s = dc.Official()
 			s.Name = official_entry[0].get()
 			s.Number = official_entry[1].get()
@@ -231,7 +233,7 @@ class OfficialsDialog(SD.Dialog):
 			self.data.append(s)
 
 class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an existing Team structure if one is available for the Team 
-	def colourcallback(self) 
+	def colourcallback(self): 
 		#call a colour picker dialog and then get the resultant colour (and make the button that called us change to that colour)
 		(colourtuple,rgbcol) = Tkc.askcolor(self.TeamHex)
 		self.TeamCol = colourtuple
@@ -249,7 +251,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		self.TeamEntry.pack(side=Tk.LEFT)
 		self.TeamCol = (255,0,0)
 		self.TeamHex = "#ffffff"
-		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=colourcallback) #colourpicker
+		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=self.colourcallback) #colourpicker
 		self.TeamColButton.pack(side=Tk.LEFT)
 		self.SkaterEntries = []
 		for i in range(24):
@@ -261,10 +263,11 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 				ss.pack(side=Tk.LEFT)
 				self.SkaterEntries[i].append(ss)
 			#and make radio button array (fairly sure that the "set" is based on the common parent (s) )
-			self.SkaterEntries[i].append(Tk.IntVar(dc.SKATER))
+			self.SkaterEntries[i].append(Tk.IntVar())
+			self.SkaterEntries[i][-1].set(dc.SKATER)
 			decode = ("Captain","Vice-Captain","Skater","Bench","Line-up")			
 			for j in range(dc.LINEUP+1):
-				t=(Tk.Radiobutton(s, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
+				t=Tk.Radiobutton(s, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
 				t.pack(side=Tk.RIGHT)
 
 		#and unpack data if we were given it
@@ -290,8 +293,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		#where we apply the results on "Okay" being clicked
 
 		#if we don't have an existing Team, make one		
-		if data is None:
-			self.data = dc.Team()
+		self.data = dc.Team()
 		
 		#we probably want to do text field length validation on these
 		self.data.LeagueName = self.LeagueEntry.get()		
@@ -299,7 +301,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		self.data.TeamCol = self.TeamCol
 		self.data.Skaters = []
 		for skate_entry in self.SkaterEntries:
-			if skate_entry[0] == "" then break #detect blank line, which means end of list
+			if skate_entry[0] == "" : break #detect blank line, which means end of list
 			s = dc.Skater()
 			s.Skatename = skate_entry[0].get()
 			s.Number = skate_entry[1].get()
@@ -309,7 +311,7 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 class DerbyTK(object):
 	#constructs for currying the callbacks for buttons appropriately
 	def TeamNWindow(self,teamnum):
-		return lambda : _TeamNWindow(teamnum)
+		return lambda : self._TeamNWindow(teamnum)
 
 	def _TeamNWindow(self,teamnum):
 		"""Get the information for Team N with a dialog box"""
@@ -320,9 +322,9 @@ class DerbyTK(object):
 		# any of the fields can be blank (but the first field with a blank skate name signals end of list)
 		boutnum = teamnum/2 
 		#done with SD.Dialog class, need to subclass		
-		if len(self.Bouts < (boutnum+1): #then we've not made this Bout or its fields yet  
+		if len(self.Bouts) < (boutnum+1): #then we've not made this Bout or its fields yet  
 			self.Bouts.append(dc.Bout())
-			self.Bouts[boutnum].Teams = (dc.Team(),dc.Team())
+			self.Bouts[boutnum].Teams = [dc.Team(),dc.Team()]
 		#create dialog and fill with existing data on that team (mapping through the Bout list)
 		d = TeamNDialog(self.root,title="Team "+str(teamnum),data=self.Bouts[boutnum].Teams[teamnum-2*boutnum])
 		#and refresh the team data from the new Dialog data
@@ -367,21 +369,21 @@ class DerbyTK(object):
 		# [Time HH:MM:SS.HH] [Halftime]
 		# [Time HH:MM:SS.HH] [Fulltime]
 		# [Time HH:MM:SS.HH] [Awards]
-		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts.Timing)
+		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts[boutnum].Timing)
 		self.Bouts[boutnum].Timing = d.data #shallow copies might make this irrelevant
 
 	def boutbuttonarray(self):
 		"""Make an array of buttons for adding a new bout's info (Teams,Officials,Jams)"""
 		boutnum = self._b
-		self.buttonframe.append(Tk.Frame(self.buttonmasterframe)) #the default button frame
-		self.buttonframe[boutnum].pack()
-		self.buttonarray.append([Tk.Button(self.buttonframe[0]) for i in range(4)])
+		self.buttonframes.append(Tk.Frame(self.buttonmasterframe)) #the default button frame
+		self.buttonframes[boutnum].pack(side=Tk.TOP)
+		self.buttonarray.append([Tk.Button(self.buttonframes[-1]) for i in range(5)])
 		self.buttonarray[boutnum][0].configure(text="Add Team "+str(boutnum*2+1), command=self.TeamNWindow(boutnum*2))
 		self.buttonarray[boutnum][0].pack(side=Tk.LEFT)
 		#todo: replace binds with command= (as optimised for button press events)
 		self.buttonarray[boutnum][1].configure(text="Add Team "+str(boutnum*2+2), command=self.TeamNWindow(boutnum*2+1))
 		self.buttonarray[boutnum][1].pack(side=Tk.LEFT)
-		self.buttonarray[boutnum][2].configure(text="Add Officials bout "+str(boutnum+1)), command=self.OfficialsWindow(boutnum))
+		self.buttonarray[boutnum][2].configure(text="Add Officials bout "+str(boutnum+1), command=self.OfficialsWindow(boutnum))
 		self.buttonarray[boutnum][2].pack(side=Tk.LEFT)
 		self.buttonarray[boutnum][3].configure(text="Enter Jam info bout "+str(boutnum+1), command=self.JamsWindow(boutnum))
 		self.buttonarray[boutnum][3].pack(side=Tk.LEFT)
@@ -434,9 +436,9 @@ class DerbyTK(object):
 		#
 	 	# (In a future version, we will have an "Import from Rinxter" button to use the API to pull all the info except Chapter times from Rinxter instance)
 		self.BR = None	
-		self.Bouts = None
+		self.Bouts = []
 		#create root TK instance
-		self.root = Tk.TK()
+		self.root = Tk.Tk()
 		self.inputframe = Tk.Frame(self.root) #frame that contains the text input fields
 		self.inputframe.pack()
 		self.movieentry = Tk.Entry(self.inputframe)
@@ -461,9 +463,11 @@ class DerbyTK(object):
 		Tk.Button(frame,text="Save", command=self.save).pack(side=Tk.RIGHT)
 		
 		bframe = Tk.Frame(self.root)
-		
+		bframe.pack()
 		Tk.Button(bframe,text="Render Subs",command=self.RenderSubs).pack(side=Tk.LEFT)
 		Tk.Button(bframe,text="Render Credits",command=self.RenderCredits).pack(side=Tk.LEFT)
 		Tk.Button(bframe,text="Render DVD", command=self.RenderDVD).pack(side=Tk.LEFT)
 
 		self.root.mainloop()
+
+DerbyTK()

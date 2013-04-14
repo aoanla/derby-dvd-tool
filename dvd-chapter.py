@@ -124,43 +124,42 @@ STAR_STATUS=3
 # and render menus + DVD
 # b.RenderDVD()
 
+def drawoutlinedtext(draw,x,y,text, font, outlinecol, textcol):
+	"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
+	
+	draw.text((x-1, y), text, font=font, fill=outlinecol)
+	draw.text((x+1, y), text, font=font, fill=outlinecol)
+	draw.text((x, y-1), text, font=font, fill=outlinecol)
+	draw.text((x, y+1), text, font=font, fill=outlinecol)
+	draw.text((x, y), text, font=font, fill=textcol)
+
+def getrightalignedloc(draw, x,text, font):
+	"""Correct width location so text looks right-aligned (PIL only does left)"""
+	w, h = draw.textsize(text,font=font)
+	return x-w #shift "rightaligned location" back by length of text
+
+def getcentredloc(draw,text,font,x=width/2):
+	"""Correct width location so text is centred (PIL only does left)"""
+	w, h = draw.textsize(text,font=font)
+	return x-(w/2) #shift "centred location" back by 1/2 length of text
+
+def initSubImage():
+	"""Initalise the PIL canvas for a new SubImage"""
+	im = Image.new('P',(width, height), 1 )
+	palette = []
+	palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
+	palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
+	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
+	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
+	im.putpalette(palette)
+	draw = ImageDraw.Draw(im);
+	return draw, im
 
 class BoutRender(object):
 	def __init__(self,Bouts,Extracredits=""):
 		self.Bouts = Bouts
 		self.Extracredits=Extracredits
-		
-	def drawoutlinedtext(self,draw,x,y,text, font, outlinecol, textcol):
-		"""Draws to drawhandle at location(x,y) the text in text, outlined in outlinecol, rendered in textcol"""
-		
-		draw.text((x-1, y), text, font=font, fill=outlinecol)
-		draw.text((x+1, y), text, font=font, fill=outlinecol)
-		draw.text((x, y-1), text, font=font, fill=outlinecol)
-		draw.text((x, y+1), text, font=font, fill=outlinecol)
-		draw.text((x, y), text, font=font, fill=textcol)
-		
-	def getrightalignedloc(self,draw, x,text, font):
-		"""Correct width location so text looks right-aligned (PIL only does left)"""
-		w, h = draw.textsize(text,font=font)
-		return x-w #shift "rightaligned location" back by length of text
-	
-	def getcentredloc(self,draw,text,font,x=width/2):
-		"""Correct width location so text is centred (PIL only does left)"""
-		w, h = draw.textsize(text,font=font)
-		return x-(w/2) #shift "centred location" back by 1/2 length of text
-	
-	def initSubImage():
-		"""Initalise the PIL canvas for a new SubImage"""
-		im = Image.new('P',(width, height), 1 )
-		palette = []
-		palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
-		palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
-		palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
-		palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
-		im.putpalette(palette)
-		draw = ImageDraw.Draw(im);
-		return draw, im
-	
+			
 	def makeScoreSubImage (self,filename, boutnum,jamnum):
 		"""make a 3colour png for the Scoreline, at top of display"""
 		#needs to make
@@ -215,23 +214,80 @@ class BoutRender(object):
 			statusstrs[1 - Status.PowerJam] += "     "
 		else:
 			statusstrs = [s + "     " for s in statusstrs] 
+		i.save( filename, "PNG", transparency=1)
 
-	def makeMainMenu(self,filename):
-		"""Make the Main menu, from the standard menu subimages + a source backdrop"""
+	def makeMainMenu(self):
+		"""Make the main menu, from a standard backdrop"""
+		#make menu backdrop
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i main.jpg -i /usr/share/devede/silence.ogg -target dvd main.mpg",shell=True)
+		#make subimages
+		self.makeMainMenuSubImage("main")
+		#mux
+		menuxml = "<subpictures><stream>\n"
+		menuxml += '<spu force="yes" start="00:00:00:00" image="mainn.png" select="mains.png" highlight="mainh.png" >' + "\n"
+		menuxml += "</spu></stream></subpictures>\n"
+		#and write out
+		f = open("mainspumux.xml",'w')
+		f.write(menuxml)
+		f.flush()
+		f.close()
+		subprocess.call("spumux mainspumux.xml < main.mpg > mainmenu.mpg", shell=True)
+
+	def makeMainMenuSubImage(self,filename):
+		"""Make the Main menu, from the standard menu subimages"""
 		#this does 
 		#      blank top of screen until low down row
 		#     [Play] [Chapters] [Subtitles]
-		d,i = self.initSubImage()
-		spacing = width / 4
-		x = self.getcentredloc(d,"Some text",font,x)
+		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		for ctrl in ctrls:
+			d,i = initSubImage()
+			fname = filename + ctrl[0]
+			ol = ctrl[1]
+			fg = ctrl[2]
+			spacing = width / 4
+			for (txt,x) in zip(("Play","Chapters","Subtitles"),range(1,4)):
+				l = spacing * x
+				#txt pretty low on screen
+				drawoutlinedtext(d,getcentredloc(d,txt,font,l),476,txt,font,ol,fg)
+			i.save( fname, "PNG", transparency=1)
+
+	def makeSubtitlesMenu(self):
+		"""Make the Subtitles selection menu, from standard backdrop + subtitle menus"""
+		#make menu backdrop
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i subtitles.jpg -i /usr/share/devede/silence.ogg -target dvd subtitles.mpg",shell=True)	
+		#make subimages
+		self.makeSubtitlesSubImage("subtitles")
+		#mux
+		menuxml = "<subpictures><stream>\n"
+		menuxml += '<spu force="yes" start="00:00:00:00" image="subtitlesn.png" select="subtitless.png" highlight="subtitlesh.png" >' + "\n"
+		menuxml += "</spu></stream></subpictures>\n"
+		#and write out
+		f = open("subtitlesspumux.xml",'w')
+		f.write(menuxml)
+		f.flush()
+		f.close()
+		#and mux
+		subprocess.call("spumux subtitlesspumux.xml < subtitles.mpg > subtitlesmenu.mpg", shell=True)
 
 	def makeSubtitlesSubImage(self,filename):
-		"""Make the Subtitles menu, from the standard Subtitles subimages + a source backdrop"""
+		"""Make the Subtitles menu, from the standard Subtitles subimages"""
 		#this does (columnar?)
 		# [No Overlay]
 		# [Scoreline + Jam Numbers]
 		# [Jammers + Statuses]
 		# [Both of the Above]
+		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		for ctrl in ctrls:
+			d,i = initSubImage()
+			fname = filename + ctrl[0]
+			ol = ctrl[1]
+			fg = ctrl[2]
+			spacing = height / 6
+			for (txt,y) in zip(("None","Scoreline + Period/Jam","Jammers","Both Above"),range(1,5)):
+				l = spacing * y + (spacing/2) #nicely vertically centre!
+				drawoutlinedtext(d,getcentredloc(d,txt,font),l,txt,font,ol,fg)
+			#do menu design stuff
+			i.save( fname, "PNG", transparency=1)
 		
 	def makeMenuSubImage(self,filename,Chapters,last=False):
 		"""make a set of gridded 3colour pngs for selecting the given Chapters"""
@@ -242,9 +298,30 @@ class BoutRender(object):
 		#  B     N
 		# and needs to know if needs N (if last Chapter is in the list then we don't need it)
 		#  								(we replace it with a link to Credits)
-		d,i = self.initSubImage()
-		spacing = width / 5
-		
+		#ctrl is namesuffix,outline,fgcol
+		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		for ctrl in ctrls:
+			d,i = initSubImage()
+			fname = filename + ctrl[0]
+			ol = ctrl[1]
+			fg = ctrl[2]
+			spacing = width / 5
+			for c,j in zip(Chapters,range(0,8))
+				string = '{0:^10.10}'.format(c[1]) #make a centred string from the chapter name, length 10
+				x = (j%4)*spacing #4 across
+				y = 100+(j//4 * 150) #2 down, starting highish
+				drawoutlinedtext(d,getcentredloc(d,string,font,x),y,string,font,ol,fg)
+	
+			back = '{0:^10.10}'.format("Back")
+			drawoutlinedtext(d,getcentredloc(d,back,font,spacing),400,back,font,ol,fg)
+			next = ""
+			if last:
+				next = '{0:^10.10}'.format("Credits")
+			else:
+				next = '{0:^10.10}'.format("Next")
+			drawoutlinedtext(d,getcentredloc(d,next,font,spacing),400,next,font,ol,fg)
+			i.save( fname, "PNG", transparency=1)
+					
 		#render blocks of 4, width=10 chars + 2 char padding
 		#normal image is called filename+"n.png"
 		#select image is called filename+"s.png"
@@ -276,26 +353,50 @@ class BoutRender(object):
 		d = ImageDraw.Draw(im)	
 		
 		filename="credits.mpg"
-		rendertoppiece
+		#increment y as we move down the credits
+		y = height #just a quick alias to make it clear we're leaving a bit blank at the top
+		#some nice greys for default outline, fg colours
+		ol = "#202020"
+		fg = "#f0f0f0"
+		dct = lambda txt,y,ol,fg : drawoutlinedtext(d,getcentredloc(d,txt,font),y,txt,font,ol,fg)
 		for b in self.Bouts:
-			renderboutheader
+			if b.Name is None:
+				bname = b.Name
+			else: #construct bout name from Team names 
+				bname = i(b.Teams[0].TeamName) + " v " + i(b.Teams[1].TeamName)
+				#this kind of thing, but need our own RGB text renderer for pretties
+			dct(txt,y,ol,fg)
+			y += 2*h 
 			for t in b.Teams:
-				renderleaguename #optional extension: render league logo
-				renderteamname	 #optional extension: render team logo
+				#get the team colour to make fancy coloured credits
+				tfg = t.TeamCol
+				tol = tuple([c/8 for c in tfg])
+				dct(team.LeagueName,y,tol,tfg)
+				y += h
+				dct(team.TeamName,y,tol,tfg)
+				y += h
 				for s in t.Skaters:
+					#render title if this is first skater in list with this title
+					tt = 
+					nt = skatername + (number) #need to wrap lines!!!
 					renderskater, captains first, benchstaff last
-				render2blanks
+				y += 2*h #two blank "lines"
 			for o in b.Officials:
+				tt = title if first time title 
 				renderofficial, headref first, titles!
-			render2blanks
+			y += 2*h #two blank "lines"
 		for line in Extracredits:
-			renderline
+			drawoutlinedtext(d,getcentredloc(d,line,font),y,line,font,ol,fg)
 		
 		#calculate frames needed for 30 second run length (*25? fps)
 		frames = 30*25
 		pixels_per_frame = float(crawl_height) / frames 
 		for i in range(frames):
-			renderoffset("cr_frm"+str(i)+".png",i*pixels_per_frame)	
+			display = im.crop([0,i*pixels_per_frame,width,i*pixels_per_frame+height])
+			scratch = Image.new('RGB',(width,height))
+			scratch.paste(display)
+			scratch.save("cr_frm"+str(i)+".png",'PNG')		
+	
 		ffmpeg cr_frm filename
 
 	def Tuple2Txt(self,tup):
@@ -401,7 +502,7 @@ class BoutRender(object):
 			moviefile = outfile
 			
 		#At this point, we have a file called "bout012.mpg", which has bout.mpg muxed with the 3 subtitle files, hopefully
-
+	
 	def GenChapters(self):
 		#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
 		#Credits are *not* a Chapter, they are a separately rendered title
@@ -411,7 +512,10 @@ class BoutRender(object):
 			if b.Name is None:
 				bname = b.Name
 			else: #construct bout name from Team names
-				bname = b.Teams[0].TeamName + " v " + b.Teams[1].TeamName
+				#this will always be too long (>10 chars)
+				#contract using initialisms for team names
+				i = lambda s : ''.join([w[0] for w in s.split(" ")]) 
+				bname = i(b.Teams[0].TeamName) + " v " + i(b.Teams[1].TeamName)
 			self.ChapList.append([b.Timing.Start,bname)
 			self.ChapList.append([b.Timing.Skateout,"Skateout")
 			for j in [j for j in b.Jams if j.Period == "1"]:
@@ -422,7 +526,7 @@ class BoutRender(object):
 			for j in [j for j in b.Jams if j.Period == "2"]:
 				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
 			self.ChapList.append([b.Timing.Fulltime,"Fulltime")
-			self.ChapList.append([b.Timing.Awards,"Skater Awards")
+			self.ChapList.append([b.Timing.Awards,"Awards")
 
 	
 	
@@ -442,15 +546,22 @@ class BoutRender(object):
 		#define the main menu here in the vmgm
 		dvdauthxml += "<menus>\n"
 		dvdauthxml += "<pgc>\n"	
-	
+		self.makeMainMenu()
 		#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
 		# or jump to menu 2 (in the vmgm), the subtitles menu
-	
+		dvdauthxml += "<button>jump titleset 1 title 1;</button>\n"
+		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n"
+		dvdauthxml += "<button>jump menu 2;</button>\n"
+		dvdauthxml += '<vob file="mainmenu.mpg" />' + "\n"
 		dvdauthxml += "<\pgc>\n"
-		dvdauthxml += '<pgc entry="subtitle">' + "\n"
-	
-		#TODO - the subtitles menu (set subtitles to none,0,1,2)
-	
+		dvdauthxml += '<pgc>' + "\n"
+		self.makeSubtitlesMenu()
+		#TODO - the subtitles menu (set subtitles to none,0,1,2 = working from references)
+		dvdauthxml += "<button> g1 = 62;</button>\n"
+		dvdauthxml += "<button> g1 = 64;</button>\n"
+		dvdauthxml += "<button> g1 = 65;</button>\n"
+		dvdauthxml += "<button> g1 = 66;</button>\n"
+		dvdauthxml += '<vob file="subtitlesmenu.mpg" />' + "\n"
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += "</menus>\n"
 		dvdauthxml += "</vmgm>\n"
@@ -462,7 +573,7 @@ class BoutRender(object):
 		#then make lots of chapter menus with it
 		
 		self.GenChapters() #make our chapters
-		l = len(self.ChapList)-1
+		l = len(self.ChapList)
 		for i in range(0,l,8):
 			block = self.ChapList[i:(i+8)]
 			#make 3 subpictures (4x2 arrangement) - normal, highlight, select
@@ -487,7 +598,7 @@ class BoutRender(object):
 	
 			dvdauthxml += "<pgc>\n"
 			for (chapter,index) in zip(block,range(i,i+8)):
-				dvdauthxml += "<button>jump chapter" + index + ";</button>\n"
+				dvdauthxml += "<button>jump title 1 chapter" + index + ";</button>\n"
 				dvdauthxml += "<button>" 
 				if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
 				else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
@@ -504,6 +615,8 @@ class BoutRender(object):
 		dvdauthxml += '<video format="pal" aspect="16:9" widescreen="nopanscan" />' + "\n"
 		dvdauthxml += '<audio format="ac3" channels="2" />' + "\n"
 		dvdauthxml += "<pgc>\n"
+		#hopefully this pre will load the selected subtitle into the "subtitle" system register
+		dvdauthxml += "<pre> s2 = g1; </pre>\n"
 		dvdauthxml += '<vob file="bout012.mpg" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"
@@ -533,115 +646,4 @@ def GT_Times(one,two):
 	if SU1 > SU2 return True
 	return False
 
-#a bouts subtitler class
-class JamSubs(object):
-	def __init__(self,Bouts):
-		self.Bouts = Bouts
-		#yes we do need to iterate over potentially more than one bout
-	def Tuple2Txt(self,tup):
-		return "rgba(%2d,%2d,%2d,255)" % tup
-	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
-		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
-		spumuxxmls += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
-		spumuxxmls += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		#Above does the below pseudocode, with a suitably patched spumux binary(!)
-		#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
-		#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
-		spumuxxmls += "</row>\n</spu>\n"	
-
-	def Serialise(fileroot):
-		#make a set of files based on root name
-		#Colours are Transparent, Black(outline), NeutralColour (for time), TeamColour (for team dependant colouring)
-		#encoding is fileroot+subtitlestream+subtitlenum.png, with a fileroot+subtitlestream.xml for the spumux config
-		Status = #null status
-		spuframes = [0,0,0]
-		outname = ["","",""]
-		spumuxxmls = ["<subpictures>\n<stream>\n","<subpictures>\n<stream>\n","<subpictures>\n<stream>\n"]
-
-		# revise below (we're now Bout centric) 
-		# for Jam in Bout.Jams:
-		#	do Scoreline at start of Jam	
-		#	do Jammerline at start of Jam
-		#	do ScoreJammerline at start of Jam
-		#	for Event in Jam:
-		#		do Jammerline
-		#		do ScoreJammerline
-
-		for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
-			#update Score
-           #Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
-           #Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam
-           #Therefore ScoreJammerlines are precisely as frequent as Jammerlines, as each Scoreline also has a Jammerline
-           #Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
-           # more than one bout in a DVD) with Scorelines
-			 #then it's a scoreline
-			spuframe[0] += 1 #increment number of Scoreline frames
-			outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
-			makeScoreSubImage(outname[0],boutnum,i)
-			#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
-			if Jam.Period = "1":
-				jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
-			elif Jam.Period = "2":  
-				jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
-			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
-				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period #if not, then halftime is in the way
-					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
-					
-			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
-
-			for j in range(len(Jam.Events)):
-				status = Status(Jam.Events[0:j])
-				#update Jammer (always)
-				spuframe[1] += 1 #increment number of Jammerline frames
-				outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframe[1]) + ".png"
-				makeJammerSubImage(outname[1],boutnum,i,status)
-				#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
-				endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
-				if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
-					endtime = Jam.Events(j+1).Time
-				self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
-
-				#update JammerScore
-				# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
-				spuframe[2] += 1
-				outname[2] = "JammerScoreline" + str(boutnum) + str(spuframe[2]) + ".png"
-				#call convert(?) to smoosh the two pngs together into the third
-				try:
-					retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
-					if retcode < 0:
-						print >>sys.stderr, "Child was terminated by signal", -retcode
-				except OSError as e:
-					print >>sys.stderr, "Execution failed:", e
-
-				self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
-	
-		#and close the xml streams
-		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
-
-		#write spumuxxmls to files
-		#and mux with spumux
-		moviefile = "bout"
-		for i in range(len(spumuxxmls)):
-			#write out config
-			f = open("spumux.xml",'w')
-			f.write(spumuxxmls[i])
-			f.flush()
-			f.close()
-			#setup file & mux
-			outfile = moviefile + str(num)
-			try:
-				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + moviefile + ".mpg > " + outfile + ".mpg", shell=True)
-				if retcode < 0:
-					print >>sys.stderr, "Child was terminated by signal", -retcode
-			except OSError as e:
-				print >>sys.stderr, "Execution failed:", e
-			#new input is old output
-			moviefile = outfile
-			
-		#At this point, we have a file called "bout012.mpg", which has bout.mpg muxed with the 3 subtitle files, hopefully
-
-	#to do: decide if we need this class, or just move it into the Bout Render class (either way, we need to rationalise the location of the functions of this class
-	# and the functions of Bout Render (some of which are called by, and share state with, the functions here...)
 

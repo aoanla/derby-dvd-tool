@@ -391,7 +391,8 @@ class DerbyTK(object):
 
 	def RenderSubs(self):
 		"""Render the movie subtitles, using dvd-chapter"""
-		self.BR = dc.BoutRender(self.Bouts,self.Extracredits)
+		
+		self.BR = dc.BoutRender(self.Bouts,self.Extracredits,self.movieentry.get(),self.mainsrcentry.get(),self.chpsrcentry.get(),self.creditmusicentry.get())
 		self.BR.RenderSubs()
 		
 	def RenderCredits(self):
@@ -403,12 +404,24 @@ class DerbyTK(object):
 		self.BR.RenderDVD()
 	
 	def save(self):
-		pickle.dump(self.Bouts,open("dvdtool.save","wb"))
+		pickle.dump(self.Bouts,open("bouts.save","wb"))
+		pickle.dump(self.BR,open("boutrender.save","wb"))
 
 	def load(self):
-		self.Bouts = pickle.load(open("dvdtool.save","rb"))
+		self.Bouts = pickle.load(open("bouts.save","rb"))
+		#should really make enough entry fields to enter all the bouts that we've loaded
+		self.BR = pickle.load(open("boutrender.save","rb"))
+		if self.BR is not None:
+			self.movieentry.delete(0,Tk.END)
+			self.movieentry.insert(0,self.BR.Movie)
+			self.mainsrcentry.delete(0,Tk.END)
+			self.mainsrcentry.insert(0,self.BR.MainSrc)
+			self.chpsrcentry.delete(0,Tk.END)
+			self.chpsrcentry.insert(0,self.BR.ChpSrc)
+			self.creditmusicentry.delete(0,Tk.END)
+			self.creditmusicentry.insert(0,self.BR.CreditMusic)
 
-	def mainWindow(self):
+	def __init__(self):
 		"""The Main Tkinter window interface"""
 		#need to get Skateout, (Timeouts?), Halftime, Fulltime, Awards times for the bouts too
 		# This is a packed dialog with:
@@ -420,11 +433,20 @@ class DerbyTK(object):
 		# which muxes the subtitle stream, generates chapter menus and credits crawls, then authors the DVD structure + makes an ISO
 		#
 	 	# (In a future version, we will have an "Import from Rinxter" button to use the API to pull all the info except Chapter times from Rinxter instance)
-	
+		self.BR = None	
+		self.Bouts = None
 		#create root TK instance
 		self.root = Tk.TK()
 		self.inputframe = Tk.Frame(self.root) #frame that contains the text input fields
 		self.inputframe.pack()
+		self.movieentry = Tk.Entry(self.inputframe)
+		self.movieentry.pack(side=Tk.LEFT)
+		self.mainsrcentry = Tk.Entry(self.inputframe)
+		self.mainsrcentry.pack(side=Tk.LEFT)
+		self.chpsrcentry = Tk.Entry(self.inputframe)
+		self.chpsrcentry.pack(side=Tk.LEFT)
+		self.creditmusicentry = Tk.Entry(self.inputframe)
+		self.creditmusicentry.pack(side=Tk.LEFT)
 		
 		self.buttonmasterframe = Tk.Frame(self.root) #master frame for the team input frames to faciliate adding rows
 		self.buttonmasterframe.pack()

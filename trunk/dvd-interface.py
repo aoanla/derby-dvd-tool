@@ -4,7 +4,7 @@
 
 import Tkinter as Tk
 import tkColorChooser as Tkc
-import dvd-chapter as dc
+import dvd_chapter as dc
 import tkSimpleDialog as SD
 import pickle
 

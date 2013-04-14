@@ -6,7 +6,7 @@
 #
 ###
 import string, Image, ImageDraw, ImagePalette, ImageFont
-import os, sys, codecs, subprocess, textwrap
+import os, sys, codecs, subprocess, textwrap, itertools
 
 
 
@@ -338,59 +338,90 @@ class BoutRender(object):
 	
 		#get Teams, Officials from Bouts structure
 	
-		numlines = 5 #intro and outro padding
-		for B in self.Bouts:
-			#these need modified to account for line wrapping (length is sum(len( sum of textwrap.wrap(s, txt_width) for s in t["Skaters"] )) etc)
-			numlines += sum([len(s.Skaters)+4 for s in b.Teams]) #num of skaters + 2 for League,Team + 2 for spacing
-			numlines += len(b.Officials)+3 #num of skaters + 1 for title + 2 for spacing
-			numlines += 2 #for spacing
-		
-		numlines += len(Extracredits)
-	
-		crawl_height = numlines * h + height*2 #1 screen's padding either side so the credits slide smoothly off and onto screen
-		#and make our working image
-		im = Image.new('RGB',(width,crawl_height))
-		d = ImageDraw.Draw(im)	
-		
+
 		filename="credits.mpg"
 		#increment y as we move down the credits
 		y = height #just a quick alias to make it clear we're leaving a bit blank at the top
 		#some nice greys for default outline, fg colours
 		ol = "#202020"
 		fg = "#f0f0f0"
-		dct = lambda txt,y,ol,fg : drawoutlinedtext(d,getcentredloc(d,txt,font),y,txt,font,ol,fg)
+		longzip = lambda tup : itertools.izip_longest(*tup,fillvalue=" ")
+		#this is how we prerender (the height we need is y+height at the end)
+		credit_txt = [] #the holder for our lines to render
 		for b in self.Bouts:
 			if b.Name is None:
-				bname = b.Name
-			else: #construct bout name from Team names 
-				bname = i(b.Teams[0].TeamName) + " v " + i(b.Teams[1].TeamName)
-				#this kind of thing, but need our own RGB text renderer for pretties
-			dct(txt,y,ol,fg)
+				txtlines = textwrap.wrap(b.Name,50) #operating with 60 chars per line, but nice centring
+			else: #construct bout name from Team names
+				wrappednames=[textwrap.wrap(t.TeamName,22) for t in b.Teams]
+				
+				txtlines = ['{0:>22.22}   {1:<22.22}'.format(*a) for a in longzip(wrappednames)]  
+				txtlines[0] = txtlines[0][:23] + "v" + txtlines[0][24:]
+				#
+			for line in txtlines:
+				credit_txt.append((line,y,ol,fg))
+				y+=h
 			y += 2*h 
 			for t in b.Teams:
 				#get the team colour to make fancy coloured credits
 				tfg = t.TeamCol
 				tol = tuple([c/8 for c in tfg])
-				dct(team.LeagueName,y,tol,tfg)
+				credit_txt.append((team.LeagueName,y,tol,tfg))
 				y += h
-				dct(team.TeamName,y,tol,tfg)
+				credit_txt.append((team.TeamName,y,tol,tfg))
 				y += h
+				t = None
+				titles = ["Captain","Vice-Captain","","Bench Coach","Line-up Manager"]
 				for s in t.Skaters:
 					#render title if this is first skater in list with this title
-					tt = 
-					nt = skatername + (number) #need to wrap lines!!!
-					renderskater, captains first, benchstaff last
+					if t != s.Role:
+						tt = titles[s.Role]
+						t = s.Role
+					else:
+						tt = ""
+					#wrap skatername and number in 27 line space
+					snspace = 27 - (len(number)+3) #space for skatename after making room for number
+					nt = textwrap.wrap(s.Skatename,snspace)
+					sp,np=[str(snsspace),str(27-snspace)
+					formatting = '{0:>27:27} {1:<'+sp+'.'+sp+'}{2:>'+np+'.'+np+'}'
+					lines = [formatting.format(*a) for a in longzip([tt,nt,['('+number+')',]])]
+					for line in txtlines:
+						credit_txt.append((line,y,tol,tfg))
+						y+=h
 				y += 2*h #two blank "lines"
+
+			credit_txt.append(("Skating Officials",y,ol,fg))
+			t = None
+			titles = ["Head Referee","Jammer Ref","Inside Pack Ref", "Outside Pack Ref"]
 			for o in b.Officials:
-				tt = title if first time title 
-				renderofficial, headref first, titles!
+				if t != o.Role:
+					tt = titles[o.Role]
+					t = o.Role
+				else:
+					tt = ""
+				nt = textwrap.wrap(o.Name,27) 
+				lines = ['{0:>27.27} {1:<27.27}'.format(*a) for a in longzip([tt,nt])]
+				for line in txtlines:
+					credit_txt.append((line,y,ol,fg))
+					y+=h
 			y += 2*h #two blank "lines"
 		for line in Extracredits:
-			drawoutlinedtext(d,getcentredloc(d,line,font),y,line,font,ol,fg)
-		
+			#consider explicitly forcing wrapping here
+			credit_txt.append((line,y,ol,fg))
+			y += h
+
+		#make an image and a line-writer for it
+		crawl_height = y + height #for scrolling off screen again		
+		im = Image.new('RGB',(width,crawl_height))
+		d = ImageDraw.Draw(im)
+		dct = lambda txt,y,ol,fg : drawoutlinedtext(d,getcentredloc(d,txt,font),y,txt,font,ol,fg)
+
+		#and render to image
+		[dct(*l) for l in credit_txt]
+
 		#calculate frames needed for 30 second run length (*25? fps)
 		frames = 30*25
-		pixels_per_frame = float(crawl_height) / frames 
+		pixels_per_frame = float(crawl_height) / frames
+		#render frames 
 		for i in range(frames):
 			display = im.crop([0,i*pixels_per_frame,width,i*pixels_per_frame+height])
 			scratch = Image.new('RGB',(width,height))

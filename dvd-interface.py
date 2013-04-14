@@ -64,15 +64,14 @@ class JamsDialog(SD.Dialog):
 		#and now do the Jams
 		# this is all in a Canvas so we can have a nice vertical scrollbar
 		c = Tk.Canvas(master)
-		f = Tk.Frame(c)
+		f = Tk.Frame(c,width=800)
 		v = Tk.Scrollbar(master, orient="vertical",command=c.yview)
-		c.configure(yscrollcommand=v.set)
+		h = Tk.Scrollbar(master, orient="horizontal",command=c.xview) #workaround
+		c.configure(yscrollcommand=v.set,xscrollcommand=h.set)
 		v.pack(side=Tk.RIGHT,fill="y")
+		h.pack(side=Tk.BOTTOM,fill="x") #workaround for Tk Canvas not letting me set 
 		c.pack(side=Tk.LEFT,fill="both",expand=True)
-		c.create_window((4,4),window=f,anchor="nw",tags="f")
-		def OFC(event):
-			c.configure(scrollregion=c.bbox("all"))
-		f.bind("<Configure>",OFC)
+		
 
 		jamframes = []		
 		self.JamEntries = []
@@ -124,11 +123,11 @@ class JamsDialog(SD.Dialog):
 			jentry[0].insert(0,jam.Time)
 			jentry[1].set(jam.Period)
 			jentry[2].set(jam.Jam)
-			jentry[3].set(jam.Jammer[0]) #etc
-			jentry[4].set(jam.Pivot[0])
+			jentry[3].set(jam.Jammers[0]) #etc
+			jentry[4].set(jam.Pivots[0])
 			jentry[5].insert(0,jam.Score[0])
-			jentry[6].set(jam.Jammer[1]) #etc
-			jentry[7].set(jam.Pivot[1])
+			jentry[6].set(jam.Jammers[1]) #etc
+			jentry[7].set(jam.Pivots[1])
 			jentry[8].insert(0,jam.Score[1])
 			jentry[-1][0].insert(0,event.Time)
 			jentry[-1][1].insert(0,event.Team)
@@ -140,6 +139,10 @@ class JamsDialog(SD.Dialog):
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
 				jentry[-1][1].insert(0,event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
+		c.create_window((4,4),window=f,anchor="nw",tags="f") #mess with width to make it work
+ 		def OFC(event):
+			c.configure(scrollregion=c.bbox("all"))
+		f.bind("<Configure>",OFC)
 
 	def add_eventrow(self,frame,entry):
 		return lambda: self._add_eventrow(frame,entry)
@@ -168,12 +171,12 @@ class JamsDialog(SD.Dialog):
 			j.Period = jam_entry[1].get()
 			j.Jam = jam_entry[2].get()
  			#and so on
- 			j.Jammer[0] = jam_entry[3].get()
- 			j.Pivot[0] = jam_entry[4].get()
- 			j.Score[0] = jam_entry[5].get()
- 			j.Jammer[1] = jam_entry[6].get()
- 			j.Pivot[1] = jam_entry[7].get()
- 			j.Score[1] = jam_entry[8].get()
+ 			j.Jammers.append(jam_entry[3].get())
+ 			j.Pivots.append(jam_entry[4].get())
+ 			j.Score.append(jam_entry[5].get())
+ 			j.Jammers.append(jam_entry[6].get())
+ 			j.Pivots.append(jam_entry[7].get())
+ 			j.Score.append(jam_entry[8].get())
 			j.Events = []
 			#then do events!
 			for event_entry in jam_entry[9:]:
@@ -369,7 +372,7 @@ class DerbyTK(object):
 		# [Time HH:MM:SS.HH] [Halftime]
 		# [Time HH:MM:SS.HH] [Fulltime]
 		# [Time HH:MM:SS.HH] [Awards]
-		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts[boutnum].Timing)
+		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts[boutnum].Timing) #
 		self.Bouts[boutnum].Timing = d.data #shallow copies might make this irrelevant
 
 	def boutbuttonarray(self):

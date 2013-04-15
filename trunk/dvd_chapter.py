@@ -428,7 +428,8 @@ class BoutRender(object):
 		# file = ogg.vorbis.VorbisFile(filename)
 		# file.time_total(0) in seconds
 		#similarly with the "audiotools" module, which provides the .seconds_length method on files
-		# presumably audiotools.open(filename).seconds_length() will work?
+		# presumably audiotools.open(filename).seconds_length() will work? 
+		# or pydub?
 		frames = 30*25
 		pixels_per_frame = float(crawl_height) / frames
 		#render frames 

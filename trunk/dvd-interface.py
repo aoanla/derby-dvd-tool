@@ -66,12 +66,18 @@ class JamsDialog(SD.Dialog):
 		c = Tk.Canvas(master)
 		f = Tk.Frame(c,width=800)
 		v = Tk.Scrollbar(master, orient="vertical",command=c.yview)
-		h = Tk.Scrollbar(master, orient="horizontal",command=c.xview) #workaround
-		c.configure(yscrollcommand=v.set,xscrollcommand=h.set)
+		#h = Tk.Scrollbar(master, orient="horizontal",command=c.xview) #workaround
+		c.configure(yscrollcommand=v.set)
+		#c.configure(xscrollcommand=h.set)
 		v.pack(side=Tk.RIGHT,fill="y")
-		h.pack(side=Tk.BOTTOM,fill="x") #workaround for Tk Canvas not letting me set 
+		#h.pack(side=Tk.BOTTOM,fill="x") #workaround for Tk Canvas not letting me set 
 		c.pack(side=Tk.LEFT,fill="both",expand=True)
-		
+		c.create_window((4,4),window=f,anchor="nw",tags="f") 
+ 		def OFC(event):
+			c.configure(scrollregion=c.bbox("all")) #set scrollregion (= internal size of canvas) to size of frame
+			c.configure(width=c.bbox("all")[2]) #set width of canvas displayed to width of frame
+		f.bind("<Configure>",OFC) #and call the above every time the frame reconfigures itself
+		#adding the "width" setting there works on OSX to make the canvas change width appropriately with the frame
 
 		jamframes = []		
 		self.JamEntries = []
@@ -139,10 +145,7 @@ class JamsDialog(SD.Dialog):
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
 				jentry[-1][1].insert(0,event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
-		c.create_window((4,4),window=f,anchor="nw",tags="f") #mess with width to make it work
- 		def OFC(event):
-			c.configure(scrollregion=c.bbox("all"))
-		f.bind("<Configure>",OFC)
+
 
 	def add_eventrow(self,frame,entry):
 		return lambda: self._add_eventrow(frame,entry)

@@ -197,7 +197,7 @@ class BoutRender(object):
 		prepend = ["","(SP)"]
 		append = ["(SP)",""]
 		for i in range(2):
-			if status.Team[i] & STAR_STATUS == STAR_STATUS : jammers.append(prepend[i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:21]+append[i])
+			if status.Teams[i] & STAR_STATUS == STAR_STATUS : jammers.append(prepend[i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:21]+append[i])
 			else:  jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i])
 		
 		string1 = '{0:<25.25}'.format(jammers[0])
@@ -208,7 +208,7 @@ class BoutRender(object):
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		statusstrs = ["",""]
-		if status.Team[i] & LEAD_STATUS == LEAD_STATUS:
+		if status.Teams[i] & LEAD_STATUS == LEAD_STATUS:
 			statusstrs[Status.LeadJammer] += "Lead "
 			statusstrs[1 - Status.LeadJammer] += "     "
 		else:

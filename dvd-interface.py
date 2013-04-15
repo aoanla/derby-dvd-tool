@@ -15,21 +15,52 @@ import pickle
 
 #NOTE : need to change all those neat vars that RadioButtons reference into Tk.StringVar s (and add get() methods to their readers, set() methods to writers). Stupid Tk.
 
+#a shim to turn on "labels" on the top row of a row/column arrangement, using the .pack geometry manager
+#use like:
+# root = Tk.Frame(someplace)
+#for i in range(rows):
+#	(s,pack) = labelshim(root,"Column Label",i,Tk.LEFT)
+#	widget = Tk.Entry(s, options)
+#	widget.pack(side=pack)
+def labelshim(root,label,count,pack):
+	if count == 0:
+		s = Tk.Frame(root)
+		s.pack(side=pack)
+		Tk.Label(s,text=label).pack(Tk.TOP)
+		return (s,Tk.TOP)
+	else:
+		return (root,pack)
+
 class TimingDialog(SD.Dialog):
 	def body(self,master):
 		topframe = Tk.Frame(master)
 		topframe.pack()
 		#do the ancillary info (Skateout, Halftime, Fulltime, Awards timing)
-		self.StartEntry = Tk.Entry(topframe)
-		self.StartEntry.pack()
-		self.SkateoutEntry = Tk.Entry(topframe)
-		self.SkateoutEntry.pack()
-		self.HalftimeEntry = Tk.Entry(topframe)
-		self.HalftimeEntry.pack()
-		self.FulltimeEntry = Tk.Entry(topframe)
-		self.FulltimeEntry.pack()
-		self.AwardsEntry = Tk.Entry(topframe)
-		self.AwardsEntry.pack()
+		f=Tk.Frame(topframe)
+		f.pack()
+		Tk.Label(f,text="Start Time HH:MM:SS.HU").pack(side=Tk.LEFT)
+		self.StartEntry = Tk.Entry(f)
+		self.StartEntry.pack(side=Tk.LEFT)
+		f=Tk.Frame(topframe)
+		f.pack()
+		Tk.Label(f,text="Skateout Time").pack(side=Tk.LEFT)
+		self.SkateoutEntry = Tk.Entry(f)
+		self.SkateoutEntry.pack(side=Tk.LEFT)
+		f=Tk.Frame(topframe)
+		f.pack()
+		Tk.Label(f,text="Half Time").pack(side=Tk.LEFT)
+		self.HalftimeEntry = Tk.Entry(f)
+		self.HalftimeEntry.pack(side=Tk.LEFT)
+		f=Tk.Frame(topframe)
+		f.pack()
+		Tk.Label(f,text="Full Time").pack(side=Tk.LEFT)		
+		self.FulltimeEntry = Tk.Entry(f)
+		self.FulltimeEntry.pack(side=Tk.LEFT)
+		f=Tk.Frame(topframe)
+		f.pack()
+		Tk.Label(f,text="Awards Time").pack(side=Tk.LEFT)		
+		self.AwardsEntry = Tk.Entry(f)
+		self.AwardsEntry.pack(side=Tk.LEFT)
 		
 		#and now get the existing info from the passed data:
 		# in this case, this is the Timing  object for the bout
@@ -93,33 +124,43 @@ class JamsDialog(SD.Dialog):
 			#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
 			#Period, Jam must be strings
 			#Time
-			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
-			self.JamEntries[i][-1].pack(side=Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[i],"Time",i,Tk.LEFT) 
+			self.JamEntries[i].append(Tk.Entry(fr))
+			self.JamEntries[i][-1].pack(side=pack)
 			#Period, Jam
 			self.JamEntries[i].append(Tk.StringVar())
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],"1","2").pack(side=Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[i],"Per",i,Tk.LEFT)
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],"1","2").pack(side=pack)
 			self.JamEntries[i].append(Tk.StringVar())
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*[str(j) for j in range(1,30)]).pack(side=Tk.LEFT)			
+			(fr,pack) = labelshim(jamframes[i],"Jam",i,Tk.LEFT)
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],*[str(j) for j in range(1,30)]).pack(side=pack)			
 			#Jammer1
 			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
+			(fr,pack) = labelshim(jamframes[i],"J1",i,Tk.LEFT)			
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 			#Pivot1
 			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=Tk.LEFT) #jammernames[0] contains Team1's list of Skatenames
+			(fr,pack) = labelshim(jamframes[i],"P1",i,Tk.LEFT)			
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 			#Score 1
-			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
-			self.JamEntries[i][-1].pack(side=Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[i],"S1",i,Tk.LEFT)
+			self.JamEntries[i].append(Tk.Entry(fr))
+			self.JamEntries[i][-1].pack(side=pack)
 			#Jammer2
 			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=Tk.LEFT) #jammernames[1] contains Team2's list of Skatenames
+			(fr,pack) = labelshim(jamframes[i],"J2",i,Tk.LEFT)
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 			#Pivot2
 			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-			Tk.OptionMenu(jamframes[i],self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=Tk.LEFT) #jammernames[1] contains Team2's list of Skatenames
+			(fr,pack) = labelshim(jamframes[i],"P2",i,Tk.LEFT)			
+			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 			#Score 2
-			self.JamEntries[i].append(Tk.Entry(jamframes[i]))
-			self.JamEntries[i][-1].pack(side=Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[i],"S2",i,Tk.LEFT)			
+			self.JamEntries[i].append(Tk.Entry(fr))
+			self.JamEntries[i][-1].pack(side=pack)
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
-			self._add_eventrow(jamframes[i],self.JamEntries[i])
+			(fr,pack) = labelshim(jamframes[i],"Event Data",i,Tk.LEFT)
+			self._add_eventrow(fr,self.JamEntries[i])
 			#and add the button for events (see below for callback)
 			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(jamframes[i],self.JamEntries[i]))
 			eventbut.pack(side=Tk.RIGHT)
@@ -136,14 +177,14 @@ class JamsDialog(SD.Dialog):
 			jentry[7].set(jam.Pivots[1])
 			jentry[8].insert(0,jam.Score[1])
 			jentry[-1][0].insert(0,event.Time)
-			jentry[-1][1].insert(0,event.Team)
+			jentry[-1][1].set(event.Team)
 			jentry[-1][2].set(event.Type)
 			for event in jam.Events[1:]:
 				#identify type, unpack
 				self._add_eventrow(jframe,jentry)
 				#this row is always the last one, so
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
-				jentry[-1][1].insert(0,event.Team) #the second entry box is the Team ID
+				jentry[-1][1].set(event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
 
 
@@ -155,9 +196,9 @@ class JamsDialog(SD.Dialog):
 		f = Tk.Frame(frame)
 		f.pack()
 		row.append(Tk.Entry(f)) #TIME
-		row[-1].pack(side=Tk.LEFT)
-		row.append(Tk.Entry(f)) #Team number (validate this as a number on submit, or even on entry...)
-		row[-1].pack(side=Tk.LEFT)		
+		row[-1].pack(side=Tk.LEFT)	
+		row.append(Tk.IntVar()) #Team number, using Option Menu to prevent need for validation
+		Tk.OptionMenu(f,self.JamEntries[i][-1],1,2).pack(side=Tk.LEFT)				
 		row.append(Tk.IntVar())  #Radio Buttons for Event type, default value Lead Jammer call
 		row[-1].set(dc.LEAD)
 		decode = ("Lead Jammer","Power Jam Starts", "Power Jam Ends", "Star Pass")
@@ -202,18 +243,23 @@ class OfficialsDialog(SD.Dialog):
 			s = Tk.Frame(master)
 			s.pack()
 			self.OfficialEntries.append([])
+			namenum = ("Official Name","Number")
 			for j in range(2):  #name and number fields
-				ss = Tk.Entry(s)
-				ss.pack(side=Tk.LEFT)
+				(fr,pack) = labelshim(s,namenum[j],i,Tk.LEFT)				
+				ss = Tk.Entry(fr)
+				ss.pack(side=pack)
 				self.OfficialEntries[i].append(ss)
 			#and radio buttons for roles
+			(fr,pack) = labelshim(s,"Roles",i,Tk.LEFT)				
 			self.OfficialEntries[i].append(Tk.IntVar())
 			self.OfficialEntries[i][-1].set(dc.JAM)
 			self.OfficialEntries[i].append([])
 			decode = ("Head Ref","Jam Ref","IPR","OPR")
+			tmp = Tk.Frame(fr) #need this to preserve arrangement of buttons using labelshim (otherwise they'd end up stacked vertically)
+			tmp.pack(side=pack)
 			for j in range(dc.OPR+1):
-				r = Tk.Radiobutton(s,text=decode[j],variable=self.OfficialEntries[i][2],value=j)
-				r.pack(side=Tk.RIGHT)
+				r = Tk.Radiobutton(tmp,text=decode[j],variable=self.OfficialEntries[i][2],value=j)
+				r.pack(side=Tk.LEFT)
 		
 		#and unpack data if given it
 		if self.data is not None:
@@ -250,11 +296,12 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		#where we stick our custom body (master is the frame we're given)
 		topframe = Tk.Frame(master)
 		topframe.pack()
-		Tk.Label(topframe,text="League").pack(side=Tk.LEFT)
-		self.LeagueEntry = Tk.Entry(topframe)
-		self.LeagueEntry.pack(side=Tk.LEFT)
-		self.TeamEntry = Tk.Entry(topframe)
-		self.TeamEntry.pack(side=Tk.LEFT)
+		(fr,pack) = labelshim(topframe,"League Name",0,Tk.LEFT)				
+		self.LeagueEntry = Tk.Entry(fr)
+		self.LeagueEntry.pack(side=pack)
+		(fr,pack) = labelshim(topframe,"Team Name",0,Tk.LEFT)		
+		self.TeamEntry = Tk.Entry(fr)
+		self.TeamEntry.pack(side=pack)
 		self.TeamCol = (255,0,0)
 		self.TeamHex = "#ffffff"
 		self.TeamColButton = Tk.Button(topframe,text="Team Colour",command=self.colourcallback) #colourpicker
@@ -263,18 +310,23 @@ class TeamNDialog(SD.Dialog): #we use the data constructor option to pass an exi
 		for i in range(24):
 			s = Tk.Frame(master)
 			s.pack()
+			namenum = ("Skatename","Number")			
 			self.SkaterEntries.append([])
 			for j in range(2): #the Skatename and Skate number fields
-				ss = Tk.Entry(s)
-				ss.pack(side=Tk.LEFT)
+				(fr,pack) = labelshim(s,namenum[j],i,Tk.LEFT)				
+				ss = Tk.Entry(fr)
+				ss.pack(side=pack)
 				self.SkaterEntries[i].append(ss)
 			#and make radio button array (fairly sure that the "set" is based on the common parent (s) )
 			self.SkaterEntries[i].append(Tk.IntVar())
 			self.SkaterEntries[i][-1].set(dc.SKATER)
-			decode = ("Captain","Vice-Captain","Skater","Bench","Line-up")			
+			decode = ("Captain","Vice-Captain","Skater","Bench","Line-up")
+			(fr,pack) = labelshim(s,"Roles",i,Tk.LEFT)
+			tmp = Tk.Frame(fr) #make things work with labelshim (else the labelled row would have vertical buttons!)
+			tmp.pack(side=pack)			
 			for j in range(dc.LINEUP+1):
-				t=Tk.Radiobutton(s, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
-				t.pack(side=Tk.RIGHT)
+				t=Tk.Radiobutton(tmp, text=decode[j],variable=self.SkaterEntries[i][2],value=j)
+				t.pack(side=Tk.LEFT)
 
 		#and unpack data if we were given it
 		if self.data is not None:
@@ -447,14 +499,26 @@ class DerbyTK(object):
 		self.root = Tk.Tk()
 		self.inputframe = Tk.Frame(self.root) #frame that contains the text input fields
 		self.inputframe.pack()
-		self.movieentry = Tk.Entry(self.inputframe)
-		self.movieentry.pack(side=Tk.LEFT)
-		self.mainsrcentry = Tk.Entry(self.inputframe)
-		self.mainsrcentry.pack(side=Tk.LEFT)
-		self.chpsrcentry = Tk.Entry(self.inputframe)
-		self.chpsrcentry.pack(side=Tk.LEFT)
-		self.creditmusicentry = Tk.Entry(self.inputframe)
-		self.creditmusicentry.pack(side=Tk.LEFT)
+		f=Tk.Frame(inputframe)
+		f.pack(side=Tk.LEFT)
+		Tk.Label(f,text="Movie source").pack()		
+		self.movieentry = Tk.Entry(f)
+		self.movieentry.pack()
+		f=Tk.Frame(inputframe)
+		f.pack(side=Tk.LEFT)
+		Tk.Label(f,text="Main menu src image").pack()		
+		self.mainsrcentry = Tk.Entry(f)
+		self.mainsrcentry.pack()
+		f=Tk.Frame(inputframe)
+		f.pack(side=Tk.LEFT)
+		Tk.Label(f,text="Chapter menu src image").pack()		
+		self.chpsrcentry = Tk.Entry(f)
+		self.chpsrcentry.pack()
+		f=Tk.Frame(inputframe)
+		f.pack(side=Tk.LEFT)
+		Tk.Label(f,text="Credits music").pack()		
+		self.creditmusicentry = Tk.Entry(f)
+		self.creditmusicentry.pack()
 		
 		self.buttonmasterframe = Tk.Frame(self.root) #master frame for the team input frames to faciliate adding rows
 		self.buttonmasterframe.pack()

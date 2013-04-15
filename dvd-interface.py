@@ -533,7 +533,7 @@ class DerbyTK(object):
 		frame.pack()
 		Tk.Button(frame,text="New bout row", command=self.boutbuttonarray).pack(side=Tk.LEFT)
 		Tk.Button(frame,text="Save", command=self.save).pack(side=Tk.RIGHT)
-		
+		Tk.Button(frame,text="Load", command=self.load).pack(side=Tk.RIGHT)
 		bframe = Tk.Frame(self.root)
 		bframe.pack()
 		Tk.Button(bframe,text="Render Subs",command=self.RenderSubs).pack(side=Tk.LEFT)

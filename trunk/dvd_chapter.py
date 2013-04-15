@@ -423,6 +423,12 @@ class BoutRender(object):
 		[dct(*l) for l in credit_txt]
 
 		#calculate frames needed for 30 second run length (*25? fps)
+		#we should actually calculate the credits length from the music supplied
+		# if it's an Ogg Vorbis container, with the ogg.vorbis module, this would be
+		# file = ogg.vorbis.VorbisFile(filename)
+		# file.time_total(0) in seconds
+		#similarly with the "audiotools" module, which provides the .seconds_length method on files
+		# presumably audiotools.open(filename).seconds_length() will work?
 		frames = 30*25
 		pixels_per_frame = float(crawl_height) / frames
 		#render frames 

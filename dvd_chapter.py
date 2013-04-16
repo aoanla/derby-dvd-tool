@@ -471,54 +471,54 @@ class BoutRender(object):
 		#	for Event in Jam:
 		#		do Jammerline
 		#		do ScoreJammerline
-
-		for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
-			#update Score
-           #Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
-           #Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam
-           #Therefore ScoreJammerlines are precisely as frequent as Jammerlines, as each Scoreline also has a Jammerline
-           #Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
-           # more than one bout in a DVD) with Scorelines
-			 #then it's a scoreline
-			spuframe[0] += 1 #increment number of Scoreline frames
-			outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
-			makeScoreSubImage(outname[0],boutnum,i)
-			#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
-			if Jam.Period == "1":
-				jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
-			elif Jam.Period == "2":  
-				jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
-			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
-				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
-					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
+		for boutnum in range(len(self.Bouts)):
+			for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
+				#update Score
+           			#Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
+          	 		#Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam
+           			#Therefore ScoreJammerlines are precisely as frequent as Jammerlines, as each Scoreline also has a Jammerline
+           	#Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
+           			# more than one bout in a DVD) with Scorelines
+			 	#then it's a scoreline
+				spuframe[0] += 1 #increment number of Scoreline frames
+				outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
+				makeScoreSubImage(outname[0],boutnum,i)
+				#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
+				if Jam.Period == "1":
+					jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
+				elif Jam.Period == "2":  
+					jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
+				if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
+					if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
+						jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
 					
-			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+				self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
-			for j in range(len(Jam.Events)):
-				status = Status(Jam.Events[0:j])
-				#update Jammer (always)
-				spuframe[1] += 1 #increment number of Jammerline frames
-				outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframe[1]) + ".png"
-				makeJammerSubImage(outname[1],boutnum,i,status)
-				#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
-				endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
-				if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
-					endtime = Jam.Events(j+1).Time
-				self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+				for j in range(len(Jam.Events)):
+					status = Status(Jam.Events[0:j])
+					#update Jammer (always)
+					spuframe[1] += 1 #increment number of Jammerline frames
+					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframe[1]) + ".png"
+					makeJammerSubImage(outname[1],boutnum,i,status)
+					#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
+					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
+					if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
+						endtime = Jam.Events(j+1).Time
+					self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
-				#update JammerScore
-				# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
-				spuframe[2] += 1
-				outname[2] = "JammerScoreline" + str(boutnum) + str(spuframe[2]) + ".png"
-				#call convert(?) to smoosh the two pngs together into the third
-				try:
-					retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
-					if retcode < 0:
-						print >>sys.stderr, "Child was terminated by signal", -retcode
-				except OSError as e:
-					print >>sys.stderr, "Execution failed:", e
+					#update JammerScore
+					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
+					spuframe[2] += 1
+					outname[2] = "JammerScoreline" + str(boutnum) + str(spuframe[2]) + ".png"
+					#call convert(?) to smoosh the two pngs together into the third
+					try:
+						retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
+						if retcode < 0:
+							print >>sys.stderr, "Child was terminated by signal", -retcode
+					except OSError as e:
+						print >>sys.stderr, "Execution failed:", e
 
-				self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+					self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 	
 		#and close the xml streams
 		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
@@ -534,7 +534,7 @@ class BoutRender(object):
 			f.close()
 			#setup file & mux
 			bits = self.Movie.split('.')
-			outfile = bits[0] + str(num) + bits[1]
+			outfile = bits[0] + str(i) + bits[1]
 			try:
 				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + self.Movie + ".mpg > " + outfile + ".mpg", shell=True)
 				if retcode < 0:

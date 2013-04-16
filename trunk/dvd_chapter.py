@@ -18,7 +18,7 @@ fontsize = 20;
 font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize)
 rubyfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf",fontsize-4)
 menufont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize+4)
-
+creditsfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize*2)
 
 #Structure
 
@@ -331,21 +331,21 @@ class BoutRender(object):
 		#select image is called filename+"s.png"
 		#highlight image is called filename+"h.png"
 	
-	def RenderCredits(self,Extracredits):
+	def RenderCredits(self):
 		"""Make a long png for the credits crawl to be rendered from"""
 		#first we need to collect metrics, as we need to make our image the right length
 		#this requires a "sacrificial" image to let us use the draw.textsize metric
-		im = Image.new('RGB',(width,height))
+		im = Image.new('RGB',(width*2,height*2)) #
 		d = ImageDraw.Draw(im)
 		w, h = d.textsize("A",font=creditsfont)
 		#get metrics and workout how much space we need
 	
 		#get Teams, Officials from Bouts structure
 	
-
+		font=creditsfont
 		filename="credits.mpg"
 		#increment y as we move down the credits
-		y = height #just a quick alias to make it clear we're leaving a bit blank at the top
+		y = height*2 #just a quick alias to make it clear we're leaving a bit blank at the top
 		#some nice greys for default outline, fg colours
 		ol = "#202020"
 		fg = "#f0f0f0"
@@ -353,7 +353,7 @@ class BoutRender(object):
 		#this is how we prerender (the height we need is y+height at the end)
 		credit_txt = [] #the holder for our lines to render
 		for b in self.Bouts:
-			if b.Name is None:
+			if b.Name is not None:
 				txtlines = textwrap.wrap(b.Name,50) #operating with 60 chars per line, but nice centring
 			else: #construct bout name from Team names
 				wrappednames=[textwrap.wrap(t.TeamName,22) for t in b.Teams]
@@ -366,58 +366,62 @@ class BoutRender(object):
 				y+=h
 			y += 2*h 
 			for t in b.Teams:
+				
 				#get the team colour to make fancy coloured credits
 				tfg = t.TeamCol
 				tol = tuple([c/8 for c in tfg])
-				credit_txt.append((team.LeagueName,y,tol,tfg))
+				credit_txt.append((t.LeagueName,y,tol,tfg))
 				y += h
-				credit_txt.append((team.TeamName,y,tol,tfg))
+				credit_txt.append((t.TeamName,y,tol,tfg))
 				y += h
-				t = None
 				titles = ["Captain","Vice-Captain","","Bench Coach","Line-up Manager"]
 				for s in t.Skaters:
+					if (s.Skatename is None) or (s.Skatename.strip() == ""):
+						break 
 					#render title if this is first skater in list with this title
-					if t != s.Role:
-						tt = titles[s.Role]
-						t = s.Role
-					else:
-						tt = ""
+					
+					tt = titles[s.Role]
 					#wrap skatername and number in 27 line space
-					snspace = 27 - (len(number)+3) #space for skatename after making room for number
+					snspace = 27 - (len(s.Number)+3) #space for skatename after making room for number
 					nt = textwrap.wrap(s.Skatename,snspace)
-					sp,np=[str(snsspace),str(27-snspace)]
-					formatting = '{0:>27:27} {1:<'+sp+'.'+sp+'}{2:>'+np+'.'+np+'}'
-					lines = [formatting.format(*a) for a in longzip([tt,nt,['('+number+')',]])]
-					for line in txtlines:
+					sp,np=[str(snspace),str(27-snspace)]
+					formatting = '{0:>27.27} {1:<'+sp+'.'+sp+'}{2:>'+np+'.'+np+'}'
+					
+					lines = [formatting.format(*a) for a in longzip([[tt],nt,['('+s.Number+')',]])]
+					for line in lines:
 						credit_txt.append((line,y,tol,tfg))
 						y+=h
 				y += 2*h #two blank "lines"
 
 			credit_txt.append(("Skating Officials",y,ol,fg))
+			y += h
 			t = None
 			titles = ["Head Referee","Jammer Ref","Inside Pack Ref", "Outside Pack Ref"]
 			for o in b.Officials:
+				if (o.Name is None) or (o.Name.strip() == ""):
+					break
 				if t != o.Role:
 					tt = titles[o.Role]
 					t = o.Role
 				else:
 					tt = ""
 				nt = textwrap.wrap(o.Name,27) 
-				lines = ['{0:>27.27} {1:<27.27}'.format(*a) for a in longzip([tt,nt])]
-				for line in txtlines:
+				lines = ['{0:>27.27} {1:<27.27}'.format(*a) for a in longzip([[tt],nt])]
+				for line in lines:
 					credit_txt.append((line,y,ol,fg))
 					y+=h
 			y += 2*h #two blank "lines"
-		for line in Extracredits:
+		for line in self.Extracredits:
 			#consider explicitly forcing wrapping here
 			credit_txt.append((line,y,ol,fg))
 			y += h
 
 		#make an image and a line-writer for it
-		crawl_height = y + height #for scrolling off screen again		
-		im = Image.new('RGB',(width,crawl_height))
+		crawl_height = y + height*2 #for scrolling off screen again
+		#make an image twice as big as destination so we can resize frames later to "antialias" scrolling and make it all look pro.		
+		im = Image.new('RGB',(width*2,crawl_height))
 		d = ImageDraw.Draw(im)
-		dct = lambda txt,y,ol,fg : drawoutlinedtext(d,getcentredloc(d,txt,font),y,txt,font,ol,fg)
+		dct = lambda txt,y,ol,fg : drawoutlinedtext(d,getcentredloc(d,txt,font,x=width),y,txt,font,ol,fg)
 
 		#and render to image
 		[dct(*l) for l in credit_txt]
@@ -432,14 +436,23 @@ class BoutRender(object):
 		# or pydub?
 		frames = 30*25
 		pixels_per_frame = float(crawl_height) / frames
+		#blendfrac = pixels_per_frame - int(pixels_per_frame)
+		#int_p_p_f = int(pixels_per_frame)
 		#render frames 
 		for i in range(frames):
-			display = im.crop([0,i*pixels_per_frame,width,i*pixels_per_frame+height])
-			scratch = Image.new('RGB',(width,height))
-			scratch.paste(display)
-			scratch.save("cr_frm"+'{0:04d}'.format(i)+".png",'PNG')		
+			disp1 = im.crop([0,int(i*pixels_per_frame),width*2,int(i*pixels_per_frame)+height*2])
+			display = disp1.resize((width,height),Image.ANTIALIAS)
+			#display.load()
+			#print display
+			#scratch = Image.new('RGB',(width,height))
+			#scratch.paste(display,None)
+			#scratch.save("cr_frm"+'{0:04d}'.format(i)+".png",'PNG')
+			display.save("cr_frm"+'{0:04d}'.format(i)+".png",'PNG')		
 		#and make movies -r 25 = 25fps, -t 30 = 30 seconds duration
-		subprocess.call("ffmpeg -f image2 -r 25 -i cr_frm%04d.png -i "+ self.CreditMusic +" -target dvd -t 30"+ filename,shell=True)
+		if (self.CreditMusic == None) or (self.CreditMusic.isspace() ):
+			print "No Music Selected for Credits"
+			sys.exit(1)
+		subprocess.call("ffmpeg -f image2 -r 25 -i cr_frm%04d.png -i "+ self.CreditMusic +" -target dvd -t 30 "+ filename,shell=True)
 
 	def Tuple2Txt(self,tup):
 		return "rgba(%2d,%2d,%2d,255)" % tup

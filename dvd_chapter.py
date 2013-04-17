@@ -88,7 +88,7 @@ class Jam(object):
 class Event(object):
 	def __init__(self):
 		self.Time = ""
-		self.Team = None #0 or 1 for Team 1 or 2
+		self.Team = None #0 or 1 for Team 1 or 2  - this turns out to be 1,2 from interface, so we fix in Status function
 		self.Type = None #LJ, PJStart, PJEnd, Star Pass
 
 #enum for Events
@@ -101,20 +101,20 @@ STAR = 3
 class Status(object):
 	#An integral of Event objects within a jam
 	def __init__(self, eventseq):
-		tr_dict = {LEAD:LEADSTATUS,POWERSTART:POWER_STATUS,POWEREND:(POWER_STATUS*-1),STAR:STAR_STATUS}
+		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x : x | STAR_STATUS}
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
 		self.Teams = [0,0]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
-			if (self.Teams[e.Team] & POWER_STATUS != POWER_STATUS ) and e.Type==POWEREND:
-				continue
-			self.Teams[e.Team] += tr_dict[e.Type]
+			#don't need to do anything now, since the bitwise op will just unset an unset bit!
+			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
+			self.Teams[e.Team-1] == tr_dict[e.Type](self.Teams[e.Team-1])
 			
 #masks for Status
 LEAD_STATUS=1
 POWER_STATUS=2
 STAR_STATUS=4
-
+POWER_CANCEL = 7 - POWER_STATUS #use with AND to unset the POWER_STATUS bit
 #Functions of the Bout Render class render a contained Bouts object
 
 #to make a dvd:
@@ -139,6 +139,7 @@ def drawoutlinedtext(draw,x,y,text, font, outlinecol, textcol):
 def getrightalignedloc(draw, x,text, font):
 	"""Correct width location so text looks right-aligned (PIL only does left)"""
 	w, h = draw.textsize(text,font=font)
+	print w
 	return x-w #shift "rightaligned location" back by length of text
 
 def getcentredloc(draw,text,font,x=width/2):
@@ -150,10 +151,10 @@ def initSubImage():
 	"""Initalise the PIL canvas for a new SubImage"""
 	im = Image.new('P',(width, height), 1 )
 	palette = []
-	palette.extend( ( 255,255,255 )  ) #maps to transparent = 1
-	palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 
-	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3
-	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4
+	palette.extend( ( 255,255,255 )  ) #maps to transparent = 1 or 0??
+	palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 or 1??
+	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3 or 2 ??
+	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4 or 3??
 	im.putpalette(palette)
 	draw = ImageDraw.Draw(im);
 	return draw, im
@@ -174,15 +175,15 @@ class BoutRender(object):
 		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
 		d,i = initSubImage()
 		string1 = '{0:<20.20}'.format(self.Bouts[boutnum].Teams[0].TeamName) 
-		string1 += '  ' + '{0:0<33.33}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
-		string2 += 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0<2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
-		string3 += '{0:0<3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[1])
+		string1 += '  ' + '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
+		string2 = 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0<2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
+		string3 = '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[1])
 		string3 += '  ' + '{0:>20.20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
 		#regularise team name + score lines to standard length
-		drawoutlinedtext(d,6,22,string1,font,2,3)
-		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,2,4)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),22,string3,font,2,3)
+		drawoutlinedtext(d,6,22,string1,font,1,2)
+		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,1,2)
 		i.save( filename, "PNG", transparency=1)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status):
@@ -190,38 +191,44 @@ class BoutRender(object):
 		#needs to make
 		#
 		# J1 Status      Status J2 (allowed width 60 = 720)
-		d,i = initSubImage()
+		d,im = initSubImage()
 		#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
 		#consider wrapping names in that case, using the textwrap.wrap(text,width) method
 			
 		#status is an integration of the events up to + including the current event (so Star Passes stick, etc)
 		#if status.Team[n] & STAR_STATUS then use Pivot[n] instead
 		jammers = []
-		prepend = ["","(SP)"]
-		append = ["(SP)",""]
+		prepend = [["","(SP)"],["","LJ "],["","PJ "]]
+		append = [["(SP)",""],[" LJ",""],[" PJ",""]]
 		for i in range(2):
-			if status.Teams[i] & STAR_STATUS == STAR_STATUS : jammers.append(prepend[i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:21]+append[i])
-			else:  jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i])
+			if status.Teams[i] & STAR_STATUS == STAR_STATUS : 
+				jammers.append(prepend[0][i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:21]+append[0][i])
+			else:  
+				jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i][0:25])
+			if status.Teams[i] & LEAD_STATUS == LEAD_STATUS :
+				jammers[i] = prepend[1][i] + jammers[i] + append[1][i]
+			if status.Teams[i] & POWER_STATUS == POWER_STATUS :
+				jammers[i] = prepend[2][i] + jammers[i] + append[2][i]
+
+		string1 = '{0:<28.28}'.format(jammers[0])
+		string2 = '{0:>28.28}'.format(jammers[1])
 		
-		string1 = '{0:<25.25}'.format(jammers[0])
-		string2 = '{0:>25.25}'.format(jammers[1])
-		
-		drawoutlinedtext(d,6,550,string1,font,2,3)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,2,3)
+		drawoutlinedtext(d,6,550,string1,font,1,2)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,1,2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
-		statusstrs = ["",""]
-		if status.Teams[i] & LEAD_STATUS == LEAD_STATUS:
-			statusstrs[Status.LeadJammer] += "Lead "
-			statusstrs[1 - Status.LeadJammer] += "     "
-		else:
-			statusstrs = [s + "     " for s in statusstrs]
-		if Status.PowerJam is not None:
-			statusstrs[Status.PowerJam] += "Power "
-			statusstrs[1 - Status.PowerJam] += "     "
-		else:
-			statusstrs = [s + "     " for s in statusstrs] 
-		i.save( filename, "PNG", transparency=1)
+		#statusstrs = ["",""]
+		#if status.Teams[i] & LEAD_STATUS == LEAD_STATUS:
+		#	statusstrs[Status.LeadJammer] += "Lead "
+		#	statusstrs[1 - Status.LeadJammer] += "     "
+		#else:
+		#	statusstrs = [s + "     " for s in statusstrs]
+		#if Status.PowerJam is not None:
+		#	statusstrs[Status.PowerJam] += "Power "
+		#	statusstrs[1 - Status.PowerJam] += "     "
+		#else:
+		#	statusstrs = [s + "     " for s in statusstrs] 
+		im.save( filename, "PNG", transparency=1)
 
 	def makeMainMenu(self):
 		"""Make the main menu, from a standard backdrop"""
@@ -245,7 +252,7 @@ class BoutRender(object):
 		#this does 
 		#      blank top of screen until low down row
 		#     [Play] [Chapters] [Subtitles]
-		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		ctrls = (("n.png",1,3),("s.png",1,2),("h.png",2,1))
 		for ctrl in ctrls:
 			d,i = initSubImage()
 			fname = filename + ctrl[0]
@@ -283,7 +290,7 @@ class BoutRender(object):
 		# [Scoreline + Jam Numbers]
 		# [Jammers + Statuses]
 		# [Both of the Above]
-		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		ctrls = (("n.png",1,3),("s.png",1,2),("h.png",2,1))
 		for ctrl in ctrls:
 			d,i = initSubImage()
 			fname = filename + ctrl[0]
@@ -306,7 +313,7 @@ class BoutRender(object):
 		# and needs to know if needs N (if last Chapter is in the list then we don't need it)
 		#  								(we replace it with a link to Credits)
 		#ctrl is namesuffix,outline,fgcol
-		ctrls = (("n.png",2,4),("s.png",2,3),("h.png",3,2))
+		ctrls = (("n.png",1,3),("s.png",1,2),("h.png",2,1))
 		for ctrl in ctrls:
 			d,i = initSubImage()
 			fname = filename + ctrl[0]
@@ -462,14 +469,15 @@ class BoutRender(object):
 		
 	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
-		spumuxxmls += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
-		spumuxxmls += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxmls += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		spumuxxmls += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
+		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
+		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
 		#Above does the below pseudocode, with a suitably patched spumux binary(!)
 		#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 		#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
-		spumuxxmls += "</row>\n</spu>\n"	
+		spumuxxml += "</row>\n</spu>\n"	
+		return spumuxxml
 
 	def RenderSubtitles(self):
 		#make a set of files based on root name
@@ -504,23 +512,23 @@ class BoutRender(object):
 					jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
 				elif Jam.Period == "2":  
 					jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
-				if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
+				if (i+1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
 					if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
-						jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
+						jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
 					
-				self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 				for j in range(len(Jam.Events)):
-					status = Status(Jam.Events[0:j])
+					status = Status(Jam.Events[0:j+1])
 					#update Jammer (always)
 					spuframes[1] += 1 #increment number of Jammerline frames
 					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframes[1]) + ".png"
 					self.makeJammerSubImage(outname[1],boutnum,i,status)
 					#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
-					if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
-						endtime = Jam.Events(j+1).Time
-					self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
+						endtime = Jam.Events[j+1].Time
+					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 					#update JammerScore
 					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
@@ -528,13 +536,14 @@ class BoutRender(object):
 					outname[2] = "JammerScoreline" + str(boutnum) + str(spuframes[2]) + ".png"
 					#call convert(?) to smoosh the two pngs together into the third
 					try:
-						retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
+						print "convert --composite " + outname[0] + " " + outname[1] + " " + outname[2]
+						retcode = subprocess.call("convert -composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
 						if retcode < 0:
 							print >>sys.stderr, "Child was terminated by signal", -retcode
 					except OSError as e:
 						print >>sys.stderr, "Execution failed:", e
 
-					self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 	
 		#and close the xml streams
 		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
@@ -549,15 +558,18 @@ class BoutRender(object):
 			f.flush()
 			f.close()
 			#setup file & mux
+			
 			bits = self.Movie.split('.')
-			outfile = bits[0] + str(i) + bits[1]
+			
+			outfile = bits[0] + str(i) + "." + bits[1]
 			try:
-				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + self.Movie + ".mpg > " + outfile + ".mpg", shell=True)
+				retcode = subprocess.call("spumux -s" + str(i) + " spumux.xml < " + self.Movie + " > " + outfile, shell=True)
 				if retcode < 0:
 					print >>sys.stderr, "Child was terminated by signal", -retcode
 			except OSError as e:
 				print >>sys.stderr, "Execution failed:", e
 			#new input is old output
+			
 			self.Movie = outfile
 			
 		#At this point, we have a file called "bout012.mpg", which has bout.mpg muxed with the 3 subtitle files, hopefully

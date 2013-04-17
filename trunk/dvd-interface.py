@@ -399,6 +399,9 @@ class DerbyTK(object):
 		#     [Skating official] [number] Role:Head[x] Jam[x] IPR[x] OPR[x]
 		# any of the fields can be blank (but the first field with a blank official name signals end of list)
 		# this also needs to handle being called more than once for multiple bouts. Possibly need an internal "Bout number" field
+		if len(self.Bouts) < (boutnum+1): #then we've not made this Bout or its fields yet , so make it 
+			self.Bouts.append(dc.Bout())
+			self.Bouts[boutnum].Teams = [dc.Team(),dc.Team()]
 		d = OfficialsDialog(self.root,title="Officials Bout "+str(boutnum+1), data=self.Bouts[boutnum].Officials)
 		self.Bouts[boutnum].Officials = d.data #do I actually need this, given shallow copy semantics?
 
@@ -416,6 +419,9 @@ class DerbyTK(object):
 		# The parser assumes that if part of an entry is empty, then the previous value should be continued
 		# (but if the Time is empty, then this signals the end of the list)
 		# Pivot data is mostly used to determine the Jammer after a star pass.
+		#
+		#put in a check for if there are actual team entries, to prevent Jam entry before Team entry
+		#
 		d = JamsDialog(self.root, title="Jams: Bout " + str(boutnum+1), data=[self.Bouts[boutnum].Jams, self.Bouts[boutnum]])
 		self.Bouts[boutnum].Jams = d.data[0] #does shallow copy semantics make this irrelevant?
 
@@ -429,6 +435,9 @@ class DerbyTK(object):
 		# [Time HH:MM:SS.HH] [Halftime]
 		# [Time HH:MM:SS.HH] [Fulltime]
 		# [Time HH:MM:SS.HH] [Awards]
+		if len(self.Bouts) < (boutnum+1): #then we've not made this Bout or its fields yet , so make it 
+			self.Bouts.append(dc.Bout())
+			self.Bouts[boutnum].Teams = [dc.Team(),dc.Team()]		
 		d = TimingDialog(self.root, title="Misc. Timing: Bout " + str(boutnum+1), data=self.Bouts[boutnum].Timing) #
 		self.Bouts[boutnum].Timing = d.data #shallow copies might make this irrelevant
 
@@ -453,7 +462,8 @@ class DerbyTK(object):
 
 	def RenderSubs(self):
 		"""Render the movie subtitles, using dvd-chapter"""
-		
+		#currently, the internal state of BR is strongly bound up with order of expected operations
+		#The BR object post RenderSubs has different internal state, which RenderDVD needs to actually function (same with RenderCredits)
 		self.BR = dc.BoutRender(self.Bouts,self.Extracredits,self.movieentry.get(),self.mainsrcentry.get(),self.chpsrcentry.get(),self.creditmusicentry.get())
 		self.BR.RenderSubtitles()
 		
@@ -467,6 +477,7 @@ class DerbyTK(object):
 	
 	def save(self):
 		pickle.dump(self.Bouts,open("bouts.save","wb"))
+		#Bug here, kinda - since BR isn't built until RenderSubs, we don't save the text entry boxes on main window most of the time
 		pickle.dump(self.BR,open("boutrender.save","wb"))
 
 	def load(self):

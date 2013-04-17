@@ -105,12 +105,15 @@ class Status(object):
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
 		self.Teams = [0,0]
 		for e in eventseq:
+			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
+			if (self.Teams[e.Team] & POWER_STATUS != POWER_STATUS ) and e.Type==POWEREND:
+				continue
 			self.Teams[e.Team] += tr_dict[e.Type]
 			
 #masks for Status
 LEAD_STATUS=1
 POWER_STATUS=2
-STAR_STATUS=3
+STAR_STATUS=4
 
 #Functions of the Bout Render class render a contained Bouts object
 

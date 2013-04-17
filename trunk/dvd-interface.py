@@ -110,7 +110,8 @@ class JamsDialog(SD.Dialog):
 		f.bind("<Configure>",OFC) #and call the above every time the frame reconfigures itself
 		#adding the "width" setting there works on OSX to make the canvas change width appropriately with the frame
 
-		jamframes = []		
+		jamframes = []
+		interstitial = []		
 		self.JamEntries = []
 		
 		jammernames = ([s.Skatename for s in self.data[1].Teams[0].Skaters],[s.Skatename for s in self.data[1].Teams[1].Skaters])
@@ -118,9 +119,9 @@ class JamsDialog(SD.Dialog):
 			#So initial row is [Time HH:MM:SS.HH] [Period] [Jam] [Jammer 1] [Pivot 1] [Score 1] [Jammer 2] [Pivot 2] [Score 2] [Add Event]
 			# and the [Add Event] adds an Event row under the current row
 			self.JamEntries.append([])
-			interstitial = Tk.Frame(f) #needed to make Jam rows appear above their Event rows
-			interstitial.pack()
-			jamframes.append(Tk.Frame(interstitial)) #this is the containing frame for the initial row + event rows we dynamically add
+			interstitial.append(Tk.Frame(f)) #needed to make Jam rows appear above their Event rows
+			interstitial[-1].pack()
+			jamframes.append(Tk.Frame(interstitial[-1])) #this is the containing frame for the initial row + event rows we dynamically add
 			jamframes[i].pack()
 			#add initial entry boxes:
 			#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
@@ -161,14 +162,14 @@ class JamsDialog(SD.Dialog):
 			self.JamEntries[i].append(Tk.Entry(fr))
 			self.JamEntries[i][-1].pack(side=pack)
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
-			(fr,pack) = labelshim(interstitial,"Event Data",0,Tk.TOP)
+			(fr,pack) = labelshim(interstitial[-1],"Event Data",0,Tk.TOP)
 			self._add_eventrow(fr,self.JamEntries[i])
 			#and add the button for events (see below for callback)
-			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(interstitial,self.JamEntries[i]))
+			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(interstitial[-1],self.JamEntries[i]))
 			eventbut.pack(side=Tk.RIGHT)
 
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
-		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,jamframes):
+		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,interstitial):
 			jentry[0].insert(0,jam.Time)
 			jentry[1].set(jam.Period)
 			jentry[2].set(jam.Jam)
@@ -178,9 +179,9 @@ class JamsDialog(SD.Dialog):
 			jentry[6].set(jam.Jammers[1]) #etc
 			jentry[7].set(jam.Pivots[1])
 			jentry[8].insert(0,jam.Score[1])
-			jentry[-1][0].insert(0,event.Time)
-			jentry[-1][1].set(event.Team)
-			jentry[-1][2].set(event.Type)
+			jentry[-1][0].insert(0,jam.Events[0].Time)
+			jentry[-1][1].set(jam.Events[0].Team)
+			jentry[-1][2].set(jam.Events[0].Type)
 			for event in jam.Events[1:]:
 				#identify type, unpack
 				self._add_eventrow(jframe,jentry)

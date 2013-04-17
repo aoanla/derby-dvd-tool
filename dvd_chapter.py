@@ -496,9 +496,9 @@ class BoutRender(object):
            	#Also Therefore: We can combine Chapter detection during a Bout (outside the bout, we need more Chapters for Skateout+Credits, and we might need 
            			# more than one bout in a DVD) with Scorelines
 			 	#then it's a scoreline
-				spuframe[0] += 1 #increment number of Scoreline frames
-				outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframe[0]) + ".png"
-				makeScoreSubImage(outname[0],boutnum,i)
+				spuframes[0] += 1 #increment number of Scoreline frames
+				outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframes[0]) + ".png"
+				self.makeScoreSubImage(outname[0],boutnum,i)
 				#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
 				if Jam.Period == "1":
 					jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
@@ -513,9 +513,9 @@ class BoutRender(object):
 				for j in range(len(Jam.Events)):
 					status = Status(Jam.Events[0:j])
 					#update Jammer (always)
-					spuframe[1] += 1 #increment number of Jammerline frames
-					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframe[1]) + ".png"
-					makeJammerSubImage(outname[1],boutnum,i,status)
+					spuframes[1] += 1 #increment number of Jammerline frames
+					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframes[1]) + ".png"
+					self.makeJammerSubImage(outname[1],boutnum,i,status)
 					#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 					if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
@@ -524,8 +524,8 @@ class BoutRender(object):
 
 					#update JammerScore
 					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
-					spuframe[2] += 1
-					outname[2] = "JammerScoreline" + str(boutnum) + str(spuframe[2]) + ".png"
+					spuframes[2] += 1
+					outname[2] = "JammerScoreline" + str(boutnum) + str(spuframes[2]) + ".png"
 					#call convert(?) to smoosh the two pngs together into the third
 					try:
 						retcode = subprocess.call("convert --composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
@@ -639,7 +639,7 @@ class BoutRender(object):
 			if i > (l-8) :  last = True #removes "Next" button
 			if i == 0 : first = True #changes "Prev" button target to the main menu
 			fname="chaptermenu"+str(i//8)
-			makeMenuSubImage(fname,block,last)
+			self.makeMenuSubImage(fname,block,last)
 			#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
 			#remember to add autobutton detection, in row then column mode
 			menuxml = "<subpictures><stream>\n"

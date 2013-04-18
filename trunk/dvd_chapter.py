@@ -114,7 +114,7 @@ class Status(object):
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!
 			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
-			self.Teams[e.Team-1] == tr_dict[e.Type](self.Teams[e.Team-1])
+			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
 			
 #masks for Status
 LEAD_STATUS=1
@@ -145,7 +145,7 @@ def drawoutlinedtext(draw,x,y,text, font, outlinecol, textcol):
 def getrightalignedloc(draw, x,text, font):
 	"""Correct width location so text looks right-aligned (PIL only does left)"""
 	w, h = draw.textsize(text,font=font)
-	print w
+	#print w
 	return x-w #shift "rightaligned location" back by length of text
 
 def getcentredloc(draw,text,font,x=width/2):
@@ -190,7 +190,7 @@ class BoutRender(object):
 		drawoutlinedtext(d,6,22,string1,font,1,2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
 		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,1,2)
-		i.save( filename, "PNG", transparency=1)
+		i.save( filename, "PNG", transparency=0)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status):
 		"""make a 3colour png for the Jammerline, at bottom of display"""
@@ -234,7 +234,7 @@ class BoutRender(object):
 		#	statusstrs[1 - Status.PowerJam] += "     "
 		#else:
 		#	statusstrs = [s + "     " for s in statusstrs] 
-		im.save( filename, "PNG", transparency=1)
+		im.save( filename, "PNG", transparency=0)
 
 	def makeMainMenu(self):
 		"""Make the main menu, from a standard backdrop"""
@@ -269,7 +269,7 @@ class BoutRender(object):
 				l = spacing * x
 				#txt pretty low on screen
 				drawoutlinedtext(d,getcentredloc(d,txt,font,l),476,txt,font,ol,fg)
-			i.save( fname, "PNG", transparency=1)
+			i.save( fname, "PNG", transparency=0)
 
 	def makeSubtitlesMenu(self):
 		"""Make the Subtitles selection menu, from standard backdrop + subtitle menus"""
@@ -307,7 +307,7 @@ class BoutRender(object):
 				l = spacing * y + (spacing/2) #nicely vertically centre!
 				drawoutlinedtext(d,getcentredloc(d,txt,font),l,txt,font,ol,fg)
 			#do menu design stuff
-			i.save( fname, "PNG", transparency=1)
+			i.save( fname, "PNG", transparency=0)
 		
 	def makeMenuSubImage(self,filename,Chapters,last=False):
 		"""make a set of gridded 3colour pngs for selecting the given Chapters"""
@@ -340,7 +340,7 @@ class BoutRender(object):
 			else:
 				next = '{0:^10.10}'.format("Next")
 			drawoutlinedtext(d,getcentredloc(d,next,font,spacing),400,next,font,ol,fg)
-			i.save( fname, "PNG", transparency=1)
+			i.save( fname, "PNG", transparency=0)
 					
 		#render blocks of 4, width=10 chars + 2 char padding
 		#normal image is called filename+"n.png"
@@ -530,6 +530,8 @@ class BoutRender(object):
 
 				for j in range(len(Jam.Events)):
 					status = Status(Jam.Events[0:j+1])
+					print status.Teams[0]
+					print status.Teams[1]
 					#update Jammer (always)
 					spuframes[1] += 1 #increment number of Jammerline frames
 					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframes[1]) + ".png"

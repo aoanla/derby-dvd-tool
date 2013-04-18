@@ -496,9 +496,11 @@ class BoutRender(object):
 		#		do Jammerline
 		#		do ScoreJammerline
 		for boutnum in range(len(self.Bouts)):
-			for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
+			for (Jam,i) in zip([J for J in self.Bouts[boutnum].Jams if ":" in J],range(len(self.Bouts[boutnum].Jams))):
 				#It is disturbingly possible that Jams contains "blank time" entries at this point
-				#Need to strip those out
+				#Need to strip those out.
+				#apparently uninitialised Jams have Time = '', but we can strip out anything without a ':' in it?
+				
 				#update Score
            			#Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
           	 		#Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam

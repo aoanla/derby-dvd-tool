@@ -496,7 +496,7 @@ class BoutRender(object):
 		#		do Jammerline
 		#		do ScoreJammerline
 		for boutnum in range(len(self.Bouts)):
-			for (Jam,i) in zip([J for J in self.Bouts[boutnum].Jams if ":" in J],range(len(self.Bouts[boutnum].Jams))):
+			for (Jam,i) in zip([J for J in self.Bouts[boutnum].Jams if ":" in J.StartTime],range(len(self.Bouts[boutnum].Jams))):
 				#It is disturbingly possible that Jams contains "blank time" entries at this point
 				#Need to strip those out.
 				#apparently uninitialised Jams have Time = '', but we can strip out anything without a ':' in it?
@@ -591,17 +591,22 @@ class BoutRender(object):
 				#contract using initialisms for team names
 				i = lambda s : ''.join([w[0] for w in s.split(" ")]) 
 				bname = i(b.Teams[0].TeamName) + " v " + i(b.Teams[1].TeamName)
-			self.ChapList.append([b.Timing.Start,bname])
-			self.ChapList.append([b.Timing.Skateout,"Skateout"])
-			for j in [j for j in b.Jams if j.Period == "1"]:
+			if ":" in b.Timing.Start: #we know it's got a valid timestamp cause it has colons in it
+				self.ChapList.append([b.Timing.Start,bname])
+			if ":" in b.Timing.Skateout:
+				self.ChapList.append([b.Timing.Skateout,"Skateout"])
+			for j in [j for j in b.Jams if (j.Period == "1") and (":" in j.StartTime)]:
 				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
 			#first period jams here
-			self.ChapList.append([b.Timing.Halftime,"Halftime"])
+			if ":" in b.Timing.Halftime:
+				self.ChapList.append([b.Timing.Halftime,"Halftime"])
 			#second period jams here
-			for j in [j for j in b.Jams if j.Period == "2"]:
+			for j in [j for j in b.Jams if (j.Period == "2") and (":" in j.StartTime)]:
 				self.ChapList.append([j.StartTime,"P"+j.Period+"J"+j.Jam])
-			self.ChapList.append([b.Timing.Fulltime,"Fulltime"])
-			self.ChapList.append([b.Timing.Awards,"Awards"])
+			if ":" in b.Timing.Fulltime:
+				self.ChapList.append([b.Timing.Fulltime,"Fulltime"])
+			if ":" in b.Timing.Awards:
+				self.ChapList.append([b.Timing.Awards,"Awards"])
 
 	
 	

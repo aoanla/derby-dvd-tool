@@ -629,7 +629,7 @@ class BoutRender(object):
 		dvdauthxml += '<dvdauthor dest="./tmpdir/">' + "\n"
 		dvdauthxml += "<vmgm>\n"
 		dvdauthxml += "<fpc>\n"
-		dvdauthxml += "jump menu 1\n" #I think this goes to the first menu in the vmgm...
+		dvdauthxml += "jump menu 1;\n" #I think this goes to the first menu in the vmgm...
 		dvdauthxml += "</fpc>\n"
 		#define the main menu here in the vmgm
 		dvdauthxml += "<menus>\n"
@@ -688,13 +688,13 @@ class BoutRender(object):
 	
 			dvdauthxml += "<pgc>\n"
 			for (chapter,index) in zip(block,range(i,i+8)):
-				dvdauthxml += "<button>jump title 1 chapter" + str(index) + ";</button>\n"
+				dvdauthxml += "<button>jump title 1 chapter " + str(index+1) + ";</button>\n"
 				dvdauthxml += "<button>" 
 				if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
 				else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
 				dvdauthxml += ";</button>\n"
-				if not last : dvdauthxml += "<button> jump menu" + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
-				else: dvdauthxml += "<button>jump title 2</button>\n" # credits as a separate title
+				if not last : dvdauthxml += "<button> jump menu " + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
+				else: dvdauthxml += "<button>jump title 2;</button>\n" # credits as a separate title
 			dvdauthxml += '<vob file="'+fname+'.mpg" />' + "\n"
 	
 			dvdauthxml += "</pgc>\n"
@@ -726,7 +726,7 @@ class BoutRender(object):
 		#and make an ISO
 		subprocess.call("dvdauthor -x auth.xml", shell=True)
 		nameofdvd="DERBY DVD"
-		subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
+		subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + "./tmpdir", shell=True)
 
 def GT_Times(one,two):
 	"""Compare two times in HH:MM:SS format, return True if one > two"""

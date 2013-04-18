@@ -1,10 +1,10 @@
 #
 # This is the Tkinter based interface code, which hopefully provides a front-end to dvd-chapter
-#
+#    This is the cut-down data entry only version
 
 import Tkinter as Tk
 import tkColorChooser as Tkc
-import dvd_chapter as dc
+import data_chapter as dc
 import tkSimpleDialog as SD
 import pickle
 
@@ -162,11 +162,14 @@ class JamsDialog(SD.Dialog):
 			self.JamEntries[i].append(Tk.Entry(fr))
 			self.JamEntries[i][-1].pack(side=pack)
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
+			#ideally, this first Event row would be magically linked with the Start Time from the same Jam row, as it must use same value
 			(fr,pack) = labelshim(interstitial[-1],"Event Data",0,Tk.TOP)
 			self._add_eventrow(fr,self.JamEntries[i])
 			#and add the button for events (see below for callback)
 			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(interstitial[-1],self.JamEntries[i]))
 			eventbut.pack(side=Tk.RIGHT)
+		#need to be able to add more jam rows
+		Tk.Button(f,text="Add more jams",command=self.add_jams(f).pack(side=Tk.BOTTOM) #pack at bottom so always lowest thing
 
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,interstitial):
@@ -190,7 +193,11 @@ class JamsDialog(SD.Dialog):
 				jentry[-1][1].set(event.Team) #the second entry box is the Team ID
 				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
 
-
+	def add_jams(self,f):
+		return lambda: self._add_jams(f)
+	def _add_jams(self,f):
+		#what this does is to to precisely what we did to add the first 25 jams, but for one more jam...
+	
 	def add_eventrow(self,frame,entry):
 		return lambda: self._add_eventrow(frame,entry)
 		
@@ -201,9 +208,10 @@ class JamsDialog(SD.Dialog):
 		row.append(Tk.Entry(f)) #TIME
 		row[-1].pack(side=Tk.LEFT)	
 		row.append(Tk.IntVar()) #Team number, using Option Menu to prevent need for validation
+		row[-1].set(1) #say Team 1 is the default (we should pick one, afterall)
 		Tk.OptionMenu(f,row[-1],1,2).pack(side=Tk.LEFT)				
-		row.append(Tk.IntVar())  #Radio Buttons for Event type, default value Lead Jammer call
-		row[-1].set(dc.LEAD)
+		row.append(Tk.IntVar())  #Radio Buttons for Event type, default value "NO PJ" for starting jam event
+		row[-1].set(dc.POWEREND) 
 		decode = ("Lead Jammer","Power Jam Starts", "PJ Ends/No PJ", "Star Pass")
 		for i in range(dc.STAR+1):
 			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i).pack(side=Tk.LEFT)
@@ -460,40 +468,15 @@ class DerbyTK(object):
 		self.buttonarray[boutnum][4].configure(text="Enter ancillary timing for bout " +str(boutnum+1), command=self.TimingWindow(boutnum))
 		self.buttonarray[boutnum][4].pack(side=Tk.RIGHT)
 		self._b += 1
-
-	def RenderSubs(self):
-		"""Render the movie subtitles, using dvd-chapter"""
-		#currently, the internal state of BR is strongly bound up with order of expected operations
-		#The BR object post RenderSubs has different internal state, which RenderDVD needs to actually function (same with RenderCredits)
-		self.BR = dc.BoutRender(self.Bouts,self.Extracredits,self.movieentry.get(),self.mainsrcentry.get(),self.chpsrcentry.get(),self.creditmusicentry.get())
-		self.BR.RenderSubtitles()
-		
-	def RenderCredits(self):
-		"""Render the movie credits, using dvd-chapter"""
-		self.BR.RenderCredits()
-		
-	def RenderDVD(self):
-		"""Render the DVD, using the functions in dvd-chapter, imported as dc"""
-		self.BR.RenderDVD()
 	
 	def save(self):
 		pickle.dump(self.Bouts,open("bouts.save","wb"))
 		#Bug here, kinda - since BR isn't built until RenderSubs, we don't save the text entry boxes on main window most of the time
-		pickle.dump(self.BR,open("boutrender.save","wb"))
+
 
 	def load(self):
 		self.Bouts = pickle.load(open("bouts.save","rb"))
 		#should really make enough entry fields to enter all the bouts that we've loaded
-		self.BR = pickle.load(open("boutrender.save","rb"))
-		if self.BR is not None:
-			self.movieentry.delete(0,Tk.END)
-			self.movieentry.insert(0,self.BR.Movie)
-			self.mainsrcentry.delete(0,Tk.END)
-			self.mainsrcentry.insert(0,self.BR.MainSrc)
-			self.chpsrcentry.delete(0,Tk.END)
-			self.chpsrcentry.insert(0,self.BR.ChpSrc)
-			self.creditmusicentry.delete(0,Tk.END)
-			self.creditmusicentry.insert(0,self.BR.CreditMusic)
 
 	def __init__(self):
 		"""The Main Tkinter window interface"""
@@ -506,8 +489,7 @@ class DerbyTK(object):
 		#   {Render Subs} {Render Credits} {Render DVD} 
 		# which muxes the subtitle stream, generates chapter menus and credits crawls, then authors the DVD structure + makes an ISO
 		#
-	 	# (In a future version, we will have an "Import from Rinxter" button to use the API to pull all the info except Chapter times from Rinxter instance)
-		self.BR = None	
+	 	# (In a future version, we will have an "Import from Rinxter" button to use the API to pull all the info except Chapter times from Rinxter instance)	
 		self.Bouts = []
 		self.Extracredits=["Movie generated by derby-dvd-tool","Released under CC:BY 3.0","Sam Skipsey"]
 		#create root TK instance
@@ -516,24 +498,6 @@ class DerbyTK(object):
 		inputframe.pack()
 		f=Tk.Frame(inputframe)
 		f.pack(side=Tk.LEFT)
-		Tk.Label(f,text="Movie source").pack()		
-		self.movieentry = Tk.Entry(f)
-		self.movieentry.pack()
-		f=Tk.Frame(inputframe)
-		f.pack(side=Tk.LEFT)
-		Tk.Label(f,text="Main menu src image").pack()		
-		self.mainsrcentry = Tk.Entry(f)
-		self.mainsrcentry.pack()
-		f=Tk.Frame(inputframe)
-		f.pack(side=Tk.LEFT)
-		Tk.Label(f,text="Chapter menu src image").pack()		
-		self.chpsrcentry = Tk.Entry(f)
-		self.chpsrcentry.pack()
-		f=Tk.Frame(inputframe)
-		f.pack(side=Tk.LEFT)
-		Tk.Label(f,text="Credits music").pack()		
-		self.creditmusicentry = Tk.Entry(f)
-		self.creditmusicentry.pack()
 		
 		self.buttonmasterframe = Tk.Frame(self.root) #master frame for the team input frames to faciliate adding rows
 		self.buttonmasterframe.pack()
@@ -547,11 +511,6 @@ class DerbyTK(object):
 		Tk.Button(frame,text="New bout row", command=self.boutbuttonarray).pack(side=Tk.LEFT)
 		Tk.Button(frame,text="Save", command=self.save).pack(side=Tk.RIGHT)
 		Tk.Button(frame,text="Load", command=self.load).pack(side=Tk.RIGHT)
-		bframe = Tk.Frame(self.root)
-		bframe.pack()
-		Tk.Button(bframe,text="Render Subs",command=self.RenderSubs).pack(side=Tk.LEFT)
-		Tk.Button(bframe,text="Render Credits",command=self.RenderCredits).pack(side=Tk.LEFT)
-		Tk.Button(bframe,text="Render DVD", command=self.RenderDVD).pack(side=Tk.LEFT)
 
 		self.root.mainloop()
 

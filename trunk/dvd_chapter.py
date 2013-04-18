@@ -13,7 +13,7 @@ import os, sys, codecs, subprocess, textwrap, itertools
 #these parts and other bits of code for writing nice subtitle images stolen from aug.ment.org/dvd/makespumux.py
 width = 720;
 height = 576;
-fontsize = 20;
+fontsize = 20; # fontsize may not be big enough for subs. Might have to use "menufont" for subs too
 #font = ImageFont.truetype("/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf", fontsize)
 font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", fontsize)
 rubyfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.ttf",fontsize-4)
@@ -149,12 +149,12 @@ def getcentredloc(draw,text,font,x=width/2):
 
 def initSubImage():
 	"""Initalise the PIL canvas for a new SubImage"""
-	im = Image.new('P',(width, height), 1 )
+	im = Image.new('P',(width, height), 0 ) #fairly sure that colours do start from 0 now...(so this makes colour 0 background + transp)
 	palette = []
-	palette.extend( ( 255,255,255 )  ) #maps to transparent = 1 or 0??
-	palette.extend( ( 0,0,0 )  ) #maps to black outline colour = 2 or 1??
-	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) = 3 or 2 ??
-	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 4 or 3??
+	palette.extend( ( 255,255,255 )  ) #maps to transparent =  0??
+	palette.extend( ( 0,0,0 )  ) #maps to black outline colour =  1??
+	palette.extend( ( 255,0,0) ) #maps to team colours (changed dynamically by chg_colcon in finished subtitles) =  2 ??
+	palette.extend( ( 200,200,200) ) #maps to "neutral" colour (for Period, Jam, other indicators) = 3??
 	im.putpalette(palette)
 	draw = ImageDraw.Draw(im);
 	return draw, im
@@ -497,6 +497,8 @@ class BoutRender(object):
 		#		do ScoreJammerline
 		for boutnum in range(len(self.Bouts)):
 			for (Jam,i) in zip(self.Bouts[boutnum].Jams,range(len(self.Bouts[boutnum].Jams))):
+				#It is disturbingly possible that Jams contains "blank time" entries at this point
+				#Need to strip those out
 				#update Score
            			#Scorelines update precisely once per jam, at the start of the jam (when a new chapter happens). 
           	 		#Jammerlines update at the same time as a Scoreline (new jammers at start of each jam), but also at LJ, PJ, SP points during a jam

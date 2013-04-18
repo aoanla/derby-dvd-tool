@@ -8,7 +8,13 @@
 import string, Image, ImageDraw, ImagePalette, ImageFont
 import os, sys, codecs, subprocess, textwrap, itertools
 
-
+#might need to make this do
+#from data_chapter import * 
+# to get the data_chapter version of Bout, depending on how picky pickle is about reconstructing classes
+#(it might not like the data_chapter and dvd_chapter versions of Bout being from different modules, despite being identical).
+#really confused by what pickle needs to be in scope to reconstruct a class. 
+#even without the necessary module loaded, pickle can apparently "load" a class
+#probably fine with "data only classes", like Bout...
 
 #these parts and other bits of code for writing nice subtitle images stolen from aug.ment.org/dvd/makespumux.py
 width = 720;

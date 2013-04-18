@@ -328,7 +328,7 @@ class BoutRender(object):
 			spacing = width / 5
 			for c,j in zip(Chapters,range(0,8)):
 				string = '{0:^10.10}'.format(c[1]) #make a centred string from the chapter name, length 10
-				x = (j%4)*spacing #4 across
+				x = (1+(j%4))*spacing #4 across
 				y = 100+(j//4 * 150) #2 down, starting highish
 				drawoutlinedtext(d,getcentredloc(d,string,font,x),y,string,font,ol,fg)
 	
@@ -618,7 +618,7 @@ class BoutRender(object):
 
 	
 	
-	def RenderDVD(self,baseimg):
+	def RenderDVD(self):
 		#this will write out the entire movie now, so execute last of all Serialisers
 		#it needs the credits done, as well as the movie subtitles muxed, including the main menu + subtitles menu
 		#we make the chapter menu vobs here, as it's convenient to generate the menus while we generate the dvdauthor xml
@@ -626,7 +626,7 @@ class BoutRender(object):
 		#start by writing out the header for dvdauthor
 		
 		dvdauthxml = '<?xml version="1.0" encoding="UTF-8"?>' + "\n"
-		dvdauthxml += '<dvdauthor dest="' + pathtodvdtmpdir + '">' + "\n"
+		dvdauthxml += '<dvdauthor dest="./tmpdir/">' + "\n"
 		dvdauthxml += "<vmgm>\n"
 		dvdauthxml += "<fpc>\n"
 		dvdauthxml += "jump menu 1\n" #I think this goes to the first menu in the vmgm...
@@ -641,7 +641,7 @@ class BoutRender(object):
 		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n"
 		dvdauthxml += "<button>jump menu 2;</button>\n"
 		dvdauthxml += '<vob file="mainmenu.mpg" />' + "\n"
-		dvdauthxml += "<\pgc>\n"
+		dvdauthxml += "</pgc>\n"
 		dvdauthxml += '<pgc>' + "\n"
 		self.makeSubtitlesMenu()
 		#TODO - the subtitles menu (set subtitles to none,0,1,2 = working from references)
@@ -664,6 +664,8 @@ class BoutRender(object):
 		l = len(self.ChapList)
 		for i in range(0,l,8):
 			block = self.ChapList[i:(i+8)]
+			last = False
+			first = False
 			#make 3 subpictures (4x2 arrangement) - normal, highlight, select
 			if i > (l-8) :  last = True #removes "Next" button
 			if i == 0 : first = True #changes "Prev" button target to the main menu
@@ -686,7 +688,7 @@ class BoutRender(object):
 	
 			dvdauthxml += "<pgc>\n"
 			for (chapter,index) in zip(block,range(i,i+8)):
-				dvdauthxml += "<button>jump title 1 chapter" + index + ";</button>\n"
+				dvdauthxml += "<button>jump title 1 chapter" + str(index) + ";</button>\n"
 				dvdauthxml += "<button>" 
 				if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
 				else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
@@ -705,14 +707,14 @@ class BoutRender(object):
 		dvdauthxml += "<pgc>\n"
 		#hopefully this pre will load the selected subtitle into the "subtitle" system register
 		dvdauthxml += "<pre> s2 = g1; </pre>\n"
-		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c.Time for c in ChapterList]) + '" />' + "\n"
+		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c[0] for c in self.ChapList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"
 		#and add the credits as title 2
 		dvdauthxml += "<pgc>\n"
 		dvdauthxml += '<vob file="credits.mpg" />' + "\n"
 		dvdauthxml += "<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
-		dvdauthxml += "<\pgc>\n"
+		dvdauthxml += "</pgc>\n"
 		dvdauthxml += "</titles>\n"
 		dvdauthxml += "</titleset>\n"
 		dvdauthxml += "</dvdauthor>\n"
@@ -723,6 +725,7 @@ class BoutRender(object):
 		f.close()
 		#and make an ISO
 		subprocess.call("dvdauthor -x auth.xml", shell=True)
+		nameofdvd="DERBY DVD"
 		subprocess.call('mkisofs -r -V "' + nameofdvd + '" -dvd-video -o "' + nameofdvd +'.iso" ' + pathtodvdtmpdir, shell=True)
 
 def GT_Times(one,two):

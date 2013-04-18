@@ -170,7 +170,7 @@ class JamsDialog(SD.Dialog):
 
 		#now fill in info from data[0] (data[1] is the Bout structure and should be rigourously used READONLY for lookup)
 		for (jam,jentry,jframe) in zip(self.data[0],self.JamEntries,interstitial):
-			jentry[0].insert(0,jam.Time)
+			jentry[0].insert(0,jam.StartTime)
 			jentry[1].set(jam.Period)
 			jentry[2].set(jam.Jam)
 			jentry[3].set(jam.Jammers[0]) #etc
@@ -214,7 +214,7 @@ class JamsDialog(SD.Dialog):
 		self.data[0] = []
 		for jam_entry in self.JamEntries:
 			j = dc.Jam()
-			j.Time = jam_entry[0].get()
+			j.StartTime = jam_entry[0].get()
 			j.Period = jam_entry[1].get()
 			j.Jam = jam_entry[2].get()
  			#and so on

@@ -483,10 +483,10 @@ class BoutRender(object):
 				jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
 			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
 				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period #if not, then halftime is in the way
-					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
+					jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
 			#adjust start time to be 0.05s *after Jam.Starttime* to avoid chapters, adjust endtime to be 0.05 before endtime so to avoid next sub	
 			#also, consider "repeating" subtitle at 5 second intervals to get people switching subtitles
-			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
+			self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
 			for j in range(len(Jam.Events)):
 				status = Status(Jam.Events[0:j])

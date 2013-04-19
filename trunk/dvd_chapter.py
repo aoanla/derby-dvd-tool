@@ -525,8 +525,10 @@ class BoutRender(object):
 				if (i+1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
 					if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
 						jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
-					
-				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+				#
+				#offset StartTime, want it to be 0.05 seconds later than this, to avoid previous sub start, and chapters
+				#consider making AddSpumxxml add copies of subtitle every five seconds in range, to get people switching subtitles...
+				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime+".05",jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 				for j in range(len(Jam.Events)):
 					status = Status(Jam.Events[0:j+1])
@@ -540,7 +542,7 @@ class BoutRender(object):
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
 						endtime = Jam.Events[j+1].Time
-					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time+".05",endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 					#update JammerScore
 					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
@@ -555,7 +557,7 @@ class BoutRender(object):
 					except OSError as e:
 						print >>sys.stderr, "Execution failed:", e
 
-					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time+".05",endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 	
 		#and close the xml streams
 		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
@@ -713,7 +715,7 @@ class BoutRender(object):
 		#and add the credits as title 2
 		dvdauthxml += "<pgc>\n"
 		dvdauthxml += '<vob file="credits.mpg" />' + "\n"
-		dvdauthxml += "<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
+		dvdauthxml += "<post>call vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += "</titles>\n"
 		dvdauthxml += "</titleset>\n"

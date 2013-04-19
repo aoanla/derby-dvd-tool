@@ -484,7 +484,8 @@ class BoutRender(object):
 			if (i-1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
 				if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period #if not, then halftime is in the way
 					jendtime = self.Bouts[boutnum].Jams[i+1].Starttime 
-					
+			#adjust start time to be 0.05s *after Jam.Starttime* to avoid chapters, adjust endtime to be 0.05 before endtime so to avoid next sub	
+			#also, consider "repeating" subtitle at 5 second intervals to get people switching subtitles
 			self.AddSpumuxxml(spumuxxmls[0],Jam.Starttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
 			for j in range(len(Jam.Events)):
@@ -496,7 +497,8 @@ class BoutRender(object):
 				#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
 				endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 				if (j-1) < len(Jam.Events): #if there are more Events in this jam, use them instead
-					endtime = Jam.Events(j+1).Time
+					endtime = Jam.Events(j+1).Time #adjust this -0.05 to avoid clash
+				#consider "repeating" subtitle at 5 second intervals to get people switching subtitles
 				self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 
 				#update JammerScore
@@ -510,7 +512,7 @@ class BoutRender(object):
 						print >>sys.stderr, "Child was terminated by signal", -retcode
 				except OSError as e:
 					print >>sys.stderr, "Execution failed:", e
-
+				#consider "repeating" subtitle at 5 second intervales to get people switching subtitles
 				self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Team[0].TeamCol,self.Bouts[boutnum].Team[1].TeamCol)
 	
 		#and close the xml streams
@@ -659,7 +661,7 @@ class BoutRender(object):
 		#and add the credits as title 2
 		dvdauthxml += "<pgc>\n"
 		dvdauthxml += '<vob file="credits.mpg" />' + "\n"
-		dvdauthxml += "<post>jump vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
+		dvdauthxml += "<post>call vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm
 		dvdauthxml += "<\pgc>\n"
 		dvdauthxml += "</titles>\n"
 		dvdauthxml += "</titleset>\n"

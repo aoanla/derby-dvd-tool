@@ -123,43 +123,43 @@ class JamsDialog(SD.Dialog):
 			self.interstitial[-1].pack()
 			jamframes=[]
 			jamframes.append(Tk.Frame(self.interstitial[-1])) #this is the containing frame for the initial row + event rows we dynamically add
-			jamframes[i].pack()
+			jamframes[-1].pack()
 			#add initial entry boxes:
 			#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
 			#Period, Jam must be strings
 			#Time
-			(fr,pack) = labelshim(jamframes[i],"Time",0,Tk.LEFT) 
+			(fr,pack) = labelshim(jamframes[-1],"Time",0,Tk.LEFT) 
 			self.JamEntries[i].append(Tk.Entry(fr))
 			self.JamEntries[i][-1].pack(side=pack)
 			#Period, Jam
 			self.JamEntries[i].append(Tk.StringVar())
-			(fr,pack) = labelshim(jamframes[i],"Per",0,Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[-1],"Per",0,Tk.LEFT)
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],"1","2").pack(side=pack)
 			self.JamEntries[i].append(Tk.StringVar())
-			(fr,pack) = labelshim(jamframes[i],"Jam",0,Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[-1],"Jam",0,Tk.LEFT)
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],*[str(j) for j in range(1,30)]).pack(side=pack)			
 			#Jammer1
 			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-			(fr,pack) = labelshim(jamframes[i],"J1",0,Tk.LEFT)			
+			(fr,pack) = labelshim(jamframes[-1],"J1",0,Tk.LEFT)			
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(self.jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 			#Pivot1
 			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-			(fr,pack) = labelshim(jamframes[i],"P1",0,Tk.LEFT)			
+			(fr,pack) = labelshim(jamframes[-1],"P1",0,Tk.LEFT)			
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(self.jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 			#Score 1
-			(fr,pack) = labelshim(jamframes[i],"Score 1",0,Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[-1],"Score 1",0,Tk.LEFT)
 			self.JamEntries[i].append(Tk.Entry(fr))
 			self.JamEntries[i][-1].pack(side=pack)
 			#Jammer2
 			self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-			(fr,pack) = labelshim(jamframes[i],"J2",0,Tk.LEFT)
+			(fr,pack) = labelshim(jamframes[-1],"J2",0,Tk.LEFT)
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(self.jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 			#Pivot2
 			self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-			(fr,pack) = labelshim(jamframes[i],"P2",0,Tk.LEFT)			
+			(fr,pack) = labelshim(jamframes[-1],"P2",0,Tk.LEFT)			
 			Tk.OptionMenu(fr,self.JamEntries[i][-1],*(self.jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 			#Score 2
-			(fr,pack) = labelshim(jamframes[i],"Score 2",0,Tk.LEFT)			
+			(fr,pack) = labelshim(jamframes[-1],"Score 2",0,Tk.LEFT)			
 			self.JamEntries[i].append(Tk.Entry(fr))
 			self.JamEntries[i][-1].pack(side=pack)
 			#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
@@ -167,7 +167,7 @@ class JamsDialog(SD.Dialog):
 			(fr,pack) = labelshim(self.interstitial[-1],"Event Data",0,Tk.TOP)
 			self._add_eventrow(fr,self.JamEntries[i])
 			#and add the button for events (see below for callback)
-			eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[i]))
+			eventbut = Tk.Button(jamframes[-1],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[i]))
 			eventbut.pack(side=Tk.RIGHT)
 		#need to be able to add more jam rows
 		Tk.Button(f,text="Add more jams",command=self.add_jams(f)).pack(side=Tk.BOTTOM) #pack at bottom so always lowest thing
@@ -206,52 +206,53 @@ class JamsDialog(SD.Dialog):
 		self.JamEntries.append([])
 		self.interstitial.append(Tk.Frame(f)) #needed to make Jam rows appear above their Event rows
 		self.interstitial[-1].pack()
+		jamframes=[]
 		jamframes.append(Tk.Frame(self.interstitial[-1])) #this is the containing frame for the initial row + event rows we dynamically add
-		jamframes[i].pack()
+		jamframes[-1].pack()
 		#add initial entry boxes:
 		#make the Period, Jam, Jammer,Pivot boxes into dropdowns to reduce error - Tk.OptionMenu types
 		#Period, Jam must be strings
 		#Time
-		(fr,pack) = labelshim(jamframes[i],"Time",0,Tk.LEFT) 
-		self.JamEntries[i].append(Tk.Entry(fr))
-		self.JamEntries[i][-1].pack(side=pack)
+		(fr,pack) = labelshim(jamframes[-1],"Time",0,Tk.LEFT) 
+		self.JamEntries[-1].append(Tk.Entry(fr))
+		self.JamEntries[-1][-1].pack(side=pack)
 		#Period, Jam
-		self.JamEntries[i].append(Tk.StringVar())
-		(fr,pack) = labelshim(jamframes[i],"Per",0,Tk.LEFT)
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],"1","2").pack(side=pack)
-		self.JamEntries[i].append(Tk.StringVar())
-		(fr,pack) = labelshim(jamframes[i],"Jam",0,Tk.LEFT)
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],*[str(j) for j in range(1,30)]).pack(side=pack)			
+		self.JamEntries[-1].append(Tk.StringVar())
+		(fr,pack) = labelshim(jamframes[-1],"Per",0,Tk.LEFT)
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],"1","2").pack(side=pack)
+		self.JamEntries[-1].append(Tk.StringVar())
+		(fr,pack) = labelshim(jamframes[-1],"Jam",0,Tk.LEFT)
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*[str(j) for j in range(1,30)]).pack(side=pack)			
 		#Jammer1
-		self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-		(fr,pack) = labelshim(jamframes[i],"J1",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
+		self.JamEntries[-1].append(Tk.StringVar()) #Jammer is a string!!!
+		(fr,pack) = labelshim(jamframes[-1],"J1",0,Tk.LEFT)			
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 		#Pivot1
-		self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-		(fr,pack) = labelshim(jamframes[i],"P1",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
+		self.JamEntries[-1].append(Tk.StringVar()) #Pivot is a string!!!
+		(fr,pack) = labelshim(jamframes[-1],"P1",0,Tk.LEFT)			
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 		#Score 1
-		(fr,pack) = labelshim(jamframes[i],"Score 1",0,Tk.LEFT)
-		self.JamEntries[i].append(Tk.Entry(fr))
-		self.JamEntries[i][-1].pack(side=pack)
+		(fr,pack) = labelshim(jamframes[-1],"Score 1",0,Tk.LEFT)
+		self.JamEntries[-1].append(Tk.Entry(fr))
+		self.JamEntries[-1][-1].pack(side=pack)
 		#Jammer2
-		self.JamEntries[i].append(Tk.StringVar()) #Jammer is a string!!!
-		(fr,pack) = labelshim(jamframes[i],"J2",0,Tk.LEFT)
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
+		self.JamEntries[-1].append(Tk.StringVar()) #Jammer is a string!!!
+		(fr,pack) = labelshim(jamframes[-1],"J2",0,Tk.LEFT)
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 		#Pivot2
-		self.JamEntries[i].append(Tk.StringVar()) #Pivot is a string!!!
-		(fr,pack) = labelshim(jamframes[i],"P2",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[i][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
+		self.JamEntries[-1].append(Tk.StringVar()) #Pivot is a string!!!
+		(fr,pack) = labelshim(jamframes[-1],"P2",0,Tk.LEFT)			
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 		#Score 2
-		(fr,pack) = labelshim(jamframes[i],"Score 2",0,Tk.LEFT)			
-		self.JamEntries[i].append(Tk.Entry(fr))
-		self.JamEntries[i][-1].pack(side=pack)
+		(fr,pack) = labelshim(jamframes[-1],"Score 2",0,Tk.LEFT)			
+		self.JamEntries[-1].append(Tk.Entry(fr))
+		self.JamEntries[-1][-1].pack(side=pack)
 		#There is always at least one Event row (since each jam has an initial state that may include continuing Power jams from last bout
 		#ideally, this first Event row would be magically linked with the Start Time from the same Jam row, as it must use same value
 		(fr,pack) = labelshim(self.interstitial[-1],"Event Data",0,Tk.TOP)
-		self._add_eventrow(fr,self.JamEntries[i])
+		self._add_eventrow(fr,self.JamEntries[-1])
 		#and add the button for events (see below for callback)
-		eventbut = Tk.Button(jamframes[i],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[i]))
+		eventbut = Tk.Button(jamframes[-1],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[-1]))
 		eventbut.pack(side=Tk.RIGHT)
 
 	def add_eventrow(self,frame,entry):

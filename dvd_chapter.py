@@ -476,14 +476,30 @@ class BoutRender(object):
 		
 	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
-		spumuxxml += '<spu start="' + starttime + '" end="' + endtime + '" image="' + outname + '"  >' + "\n"
-		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		#Above does the below pseudocode, with a suitably patched spumux binary(!)
-		#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
-		#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
-		spumuxxml += "</row>\n</spu>\n"	
+		#Should actually do this for every 5 second interval in range endtime-starttime
+		start = startime.split(':')		
+		end = endtime.split(':')
+		#calculate time in seconds between the starts and ends
+		def timeoffset(secs):
+			tmp = start[:-2]
+			tmp.append(str((secs//60)+int(start[-2])))
+			tmp.append(str((secs%60)+int(start[-1])))
+			return ':'.join(tmp)
+		ssecs = reduce(lambda x,y : x+y, [int(i[0])*i[1] for i in zip(start,[3600,60,1])])
+		esecs = reduce(lambda x,y : x+y, [int(i[0])*i[1] for i in zip(end, [3600,60,1])])
+		rng = esecs = ssecs
+		for s in range(0,rng,5):
+			starttime = timeoffset(s)
+			etime = timeoffset(s+5) if (s+5) <= rng else endtime 
+			 	
+			spumuxxml += '<spu start="' + starttime+'.05" end="' + endtime + '" image="' + outname + '"  >' + "\n"
+			spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
+			spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+			spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+			#Above does the below pseudocode, with a suitably patched spumux binary(!)
+			#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
+			#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
+			spumuxxml += "</row>\n</spu>\n"	
 		return spumuxxml
 
 	def RenderSubtitles(self):

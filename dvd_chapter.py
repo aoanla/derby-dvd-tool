@@ -307,6 +307,7 @@ class BoutRender(object):
 				l = spacing * y + (spacing/2) #nicely vertically centre!
 				drawoutlinedtext(d,getcentredloc(d,txt,font),l,txt,font,ol,fg)
 			#do menu design stuff
+			drawoutlinedtext(d,getrightalignedloc(700,"Back",font),spacing*(5.5),"Back",font,ol,fg)
 			i.save( fname, "PNG", transparency=0)
 		
 	def makeMenuSubImage(self,filename,Chapters,last=False):
@@ -638,9 +639,10 @@ class BoutRender(object):
 		dvdauthxml += "<pgc>\n"	
 		self.makeMainMenu()
 		#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
-		# or jump to menu 2 (in the vmgm), the subtitles menu
-		dvdauthxml += "<button>jump titleset 1 title 1;</button>\n"
-		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n"
+		# or jump to menu 2 (in the vmgm), the subtitles menu. 
+		#The obvious doesn't work as vmgms can't do this, apparently..
+		dvdauthxml += "<button>jump titleset 1 title;</button>\n"
+		dvdauthxml += "<button>jump titleset 1 menu;</button>\n"
 		dvdauthxml += "<button>jump menu 2;</button>\n"
 		dvdauthxml += '<vob file="mainmenu.mpg" />' + "\n"
 		dvdauthxml += "</pgc>\n"
@@ -651,6 +653,7 @@ class BoutRender(object):
 		dvdauthxml += "<button> g1 = 64;</button>\n"
 		dvdauthxml += "<button> g1 = 65;</button>\n"
 		dvdauthxml += "<button> g1 = 66;</button>\n"
+		dvdauthxml += "<button> jump menu 1;</button>\n" #hopefully, go back to main menu 
 		dvdauthxml += '<vob file="subtitlesmenu.mpg" />' + "\n"
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += "</menus>\n"

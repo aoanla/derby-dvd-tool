@@ -174,12 +174,13 @@ class BoutRender(object):
 		self.ChpSrc=chpsrc
 		self.CreditMusic=creditmusic
 			
-	def makeScoreSubImage (self,filename, boutnum,jamnum):
+	def makeScoreSubImage (self,filename, boutnum,jamnum,dark=[False,False]):
 		"""make a 3colour png for the Scoreline, at top of display"""
 		#needs to make
 		#
 		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
 		d,i = initSubImage()
+		ol = [3 if c else 1 for c in dark] #bright outline for dark colours
 		string1 = '{0:<20.20}'.format(self.Bouts[boutnum].Teams[0].TeamName) 
 		string1 += '  ' + '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
 		string2 = 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0<2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
@@ -187,17 +188,20 @@ class BoutRender(object):
 		string3 += '  ' + '{0:>20.20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
 		#regularise team name + score lines to standard length
-		drawoutlinedtext(d,6,22,string1,font,1,2)
+		drawoutlinedtext(d,6,22,string1,font,ol[0],2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,1,2)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	
-	def makeJammerSubImage (self,filename, boutnum,jamnum,status):
+	def makeJammerSubImage (self,filename, boutnum,jamnum,status,dark=[False,False]):
 		"""make a 3colour png for the Jammerline, at bottom of display"""
 		#needs to make
 		#
 		# J1 Status      Status J2 (allowed width 60 = 720)
 		d,im = initSubImage()
+
+		ol = [3 if c else 1 for c in dark] #bright outline for dark colours
+		
 		#it is possible (cf "The Very Hungry Splatterkiller" = 30 chars) for jammer names to be too long for fields
 		#consider wrapping names in that case, using the textwrap.wrap(text,width) method
 			
@@ -219,8 +223,8 @@ class BoutRender(object):
 		string1 = '{0:<28.28}'.format(jammers[0])
 		string2 = '{0:>28.28}'.format(jammers[1])
 		
-		drawoutlinedtext(d,6,550,string1,font,1,2)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,1,2)
+		drawoutlinedtext(d,6,550,string1,font,ol[0],2)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,ol[1],2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		#statusstrs = ["",""]
@@ -386,7 +390,10 @@ class BoutRender(object):
 				
 				#get the team colour to make fancy coloured credits
 				tfg = t.TeamCol
-				tol = tuple([c/8 for c in tfg])
+				if (tfg[0] < 128) & (tfg[1] < 128) & (tfg[2] < 128): #dark colour needs light ol
+					tol = tuple([((c*3)/2) if c>80 else 128 for c in tfg])
+				else: #light colour needs dark ol
+					tol = tuple([c/4 for c in tfg])
 				credit_txt.append((t.LeagueName,y,tol,tfg))
 				y += h
 				credit_txt.append((t.TeamName,y,tol,tfg))
@@ -519,6 +526,12 @@ class BoutRender(object):
 		#		do Jammerline
 		#		do ScoreJammerline
 		for boutnum in range(len(self.Bouts)):
+			dark=[] #detect dark team colours, so we can give them light outlines
+			for t in self.Bouts[boutnum].Teams:
+				if reduce(lambda x, y: x+(y*y), t.TeamCol) < 20000): #"size" of colour
+					dark.append(True)
+				else:
+					dark.append(False)	
 			for (Jam,i) in zip([J for J in self.Bouts[boutnum].Jams if ":" in J.StartTime],range(len(self.Bouts[boutnum].Jams))):
 				#It is disturbingly possible that Jams contains "blank time" entries at this point
 				#Need to strip those out.
@@ -533,7 +546,7 @@ class BoutRender(object):
 			 	#then it's a scoreline
 				spuframes[0] += 1 #increment number of Scoreline frames
 				outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframes[0]) + ".png"
-				self.makeScoreSubImage(outname[0],boutnum,i)
+				self.makeScoreSubImage(outname[0],boutnum,i,dark)
 				#jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
 				if Jam.Period == "1":
 					jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
@@ -554,7 +567,7 @@ class BoutRender(object):
 					#update Jammer (always)
 					spuframes[1] += 1 #increment number of Jammerline frames
 					outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframes[1]) + ".png"
-					self.makeJammerSubImage(outname[1],boutnum,i,status)
+					self.makeJammerSubImage(outname[1],boutnum,i,status,dark)
 					#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead

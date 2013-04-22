@@ -226,11 +226,11 @@ class JamsDialog(SD.Dialog):
 		#Jammer1
 		self.JamEntries[-1].append(Tk.StringVar()) #Jammer is a string!!!
 		(fr,pack) = labelshim(jamframes[-1],"J1",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(self.jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 		#Pivot1
 		self.JamEntries[-1].append(Tk.StringVar()) #Pivot is a string!!!
 		(fr,pack) = labelshim(jamframes[-1],"P1",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(self.jammernames[0]) ).pack(side=pack) #jammernames[0] contains Team1's list of Skatenames
 		#Score 1
 		(fr,pack) = labelshim(jamframes[-1],"Score 1",0,Tk.LEFT)
 		self.JamEntries[-1].append(Tk.Entry(fr))
@@ -238,11 +238,11 @@ class JamsDialog(SD.Dialog):
 		#Jammer2
 		self.JamEntries[-1].append(Tk.StringVar()) #Jammer is a string!!!
 		(fr,pack) = labelshim(jamframes[-1],"J2",0,Tk.LEFT)
-		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(self.jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 		#Pivot2
 		self.JamEntries[-1].append(Tk.StringVar()) #Pivot is a string!!!
 		(fr,pack) = labelshim(jamframes[-1],"P2",0,Tk.LEFT)			
-		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
+		Tk.OptionMenu(fr,self.JamEntries[-1][-1],*(self.jammernames[1]) ).pack(side=pack) #jammernames[1] contains Team2's list of Skatenames
 		#Score 2
 		(fr,pack) = labelshim(jamframes[-1],"Score 2",0,Tk.LEFT)			
 		self.JamEntries[-1].append(Tk.Entry(fr))

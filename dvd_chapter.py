@@ -247,8 +247,8 @@ class BoutRender(object):
 		#make subimages
 		self.makeMainMenuSubImage("main")
 		#mux
-		menuxml = "<subpictures><stream>\n"
-		menuxml += '<spu force="yes" start="00:00:00:00" image="mainn.png" select="mains.png" highlight="mainh.png" >' + "\n"
+		menuxml = "<subpictures><stream>\n" #do button size for autobutton mode
+		menuxml += '<spu force="yes" start="00:00:00:00" image="mainn.png" select="mains.png" highlight="mainh.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
 		menuxml += "</spu></stream></subpictures>\n"
 		#and write out
 		f = open("mainspumux.xml",'w')
@@ -282,8 +282,8 @@ class BoutRender(object):
 		#make subimages
 		self.makeSubtitlesSubImage("subtitles")
 		#mux
-		menuxml = "<subpictures><stream>\n"
-		menuxml += '<spu force="yes" start="00:00:00:00" image="subtitlesn.png" select="subtitless.png" highlight="subtitlesh.png" >' + "\n"
+		menuxml = "<subpictures><stream>\n" #do button size for autobutton mode
+		menuxml += '<spu force="yes" start="00:00:00:00" image="subtitlesn.png" select="subtitless.png" highlight="subtitlesh.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
 		menuxml += "</spu></stream></subpictures>\n"
 		#and write out
 		f = open("subtitlesspumux.xml",'w')
@@ -658,7 +658,7 @@ class BoutRender(object):
 		#start by writing out the header for dvdauthor
 		
 		dvdauthxml = '<?xml version="1.0" encoding="UTF-8"?>' + "\n"
-		dvdauthxml += '<dvdauthor dest="./tmpdir/" jumppad="1">' + "\n"
+		dvdauthxml += '<dvdauthor dest="./tmpdir/" >' + "\n" #don't use jumppad, it breaks stuff
 		dvdauthxml += "<vmgm>\n"
 		dvdauthxml += "<fpc>\n"
 		dvdauthxml += "jump menu 1;\n" #I think this goes to the first menu in the vmgm...
@@ -670,10 +670,10 @@ class BoutRender(object):
 		#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
 		# or jump to menu 2 (in the vmgm), the subtitles menu. 
 		#The obvious doesn't work as vmgms can't do this, apparently..
-		dvdauthxml += "<button>jump titleset 1 title 1;</button>\n"
-		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n"
+		dvdauthxml += "<button>jump title 1;</button>\n" #probably works
+		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n" #no idea
 		dvdauthxml += "<button>jump menu 2;</button>\n"
-		dvdauthxml += '<vob file="mainmenu.mpg" />' + "\n"
+		dvdauthxml += '<vob file="mainmenu.mpg" pause="inf" />' + "\n"
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += '<pgc>' + "\n"
 		self.makeSubtitlesMenu()
@@ -683,7 +683,7 @@ class BoutRender(object):
 		dvdauthxml += "<button> g1 = 65;</button>\n"
 		dvdauthxml += "<button> g1 = 66;</button>\n"
 		dvdauthxml += "<button> jump menu 1;</button>\n" #hopefully, go back to main menu 
-		dvdauthxml += '<vob file="subtitlesmenu.mpg" />' + "\n"
+		dvdauthxml += '<vob file="subtitlesmenu.mpg" pause="inf" />' + "\n"
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += "</menus>\n"
 		dvdauthxml += "</vmgm>\n"
@@ -708,7 +708,7 @@ class BoutRender(object):
 			#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
 			#remember to add autobutton detection, in row then column mode
 			menuxml = "<subpictures><stream>\n"
-			menuxml += '<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" >' + "\n"
+			menuxml += '<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
 			menuxml += "</spu></stream></subpictures>\n"
 			#and write out
 			f = open("menuspumux.xml",'w')
@@ -729,7 +729,7 @@ class BoutRender(object):
 				dvdauthxml += ";</button>\n"
 				if not last : dvdauthxml += "<button> jump menu " + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
 				else: dvdauthxml += "<button>jump title 2;</button>\n" # credits as a separate title
-			dvdauthxml += '<vob file="'+fname+'.mpg" />' + "\n"
+			dvdauthxml += '<vob file="'+fname+'.mpg" pause="inf" />' + "\n"
 	
 			dvdauthxml += "</pgc>\n"
 

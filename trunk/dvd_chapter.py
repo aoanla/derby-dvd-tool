@@ -484,22 +484,22 @@ class BoutRender(object):
 	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
 		#Should actually do this for every 5 second interval in range endtime-starttime
-		start = startime.split(':')		
+		start = starttime.split(':')		
 		end = endtime.split(':')
 		#calculate time in seconds between the starts and ends
 		def timeoffset(secs):
 			tmp = start[:-2]
 			tmp.append(str((secs//60)+int(start[-2])))
-			tmp.append(str((secs%60)+int(start[-1])))
+			tmp.append(str((secs%60)+int(start[-1][:2])))
 			return ':'.join(tmp)
-		ssecs = reduce(lambda x,y : x+y, [int(i[0])*i[1] for i in zip(start,[3600,60,1])])
-		esecs = reduce(lambda x,y : x+y, [int(i[0])*i[1] for i in zip(end, [3600,60,1])])
-		rng = esecs = ssecs
+		ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
+		esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
+		rng = esecs - ssecs
 		for s in range(0,rng,5):
 			starttime = timeoffset(s)
 			etime = timeoffset(s+5) if (s+5) <= rng else endtime 
 			 	
-			spumuxxml += '<spu start="' + starttime+'.05" end="' + endtime + '" image="' + outname + '"  >' + "\n"
+			spumuxxml += '<spu start="' + starttime+'.05" end="' + etime + '" image="' + outname + '"  >' + "\n"
 			spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
 			spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
 			spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
@@ -528,7 +528,7 @@ class BoutRender(object):
 		for boutnum in range(len(self.Bouts)):
 			dark=[] #detect dark team colours, so we can give them light outlines
 			for t in self.Bouts[boutnum].Teams:
-				if reduce(lambda x, y: x+(y*y), t.TeamCol) < 20000): #"size" of colour
+				if reduce(lambda x, y: x+(y*y), t.TeamCol) < 20000 : #"size" of colour
 					dark.append(True)
 				else:
 					dark.append(False)	

@@ -727,12 +727,12 @@ class BoutRender(object):
 			dvdauthxml += "<pgc>\n"
 			for (chapter,index) in zip(block,range(i,i+8)):
 				dvdauthxml += "<button>jump title 1 chapter " + str(index+1) + ";</button>\n"
-				dvdauthxml += "<button>" 
-				if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
-				else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
-				dvdauthxml += ";</button>\n"
-				if not last : dvdauthxml += "<button> jump menu " + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
-				else: dvdauthxml += "<button>jump title 2;</button>\n" # credits as a separate title
+			dvdauthxml += "<button>" 
+			if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
+			else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
+			dvdauthxml += ";</button>\n"
+			if not last : dvdauthxml += "<button> jump menu " + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
+			else: dvdauthxml += "<button>jump title 2;</button>\n" # credits as a separate title
 			dvdauthxml += '<vob file="'+fname+'.mpg" pause="inf" />' + "\n"
 	
 			dvdauthxml += "</pgc>\n"

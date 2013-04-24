@@ -488,9 +488,11 @@ class BoutRender(object):
 		end = endtime.split(':')
 		#calculate time in seconds between the starts and ends
 		def timeoffset(secs):
-			tmp = start[:-2]
-			tmp.append(str((secs//60)+int(start[-2])))
-			tmp.append(str((secs%60)+int(start[-1][:2])))
+			secsval = secs + int(start[-1][:2])
+			minval = int(start[-2]) + (secsval//60)
+			tmp = ['{0:02}'.format(int(start[0])+(minval//60)),]
+			tmp.append('{0:02}'.format((secsval//60)+int(start[-2])))
+			tmp.append('{0:02}'.format(secsval%60))
 			return ':'.join(tmp)
 		ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
 		esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
@@ -671,7 +673,7 @@ class BoutRender(object):
 		# or jump to menu 2 (in the vmgm), the subtitles menu. 
 		#The obvious doesn't work as vmgms can't do this, apparently..
 		dvdauthxml += "<button>jump title 1;</button>\n" #probably works
-		dvdauthxml += "<button>jump titleset 1 menu 1;</button>\n" #no idea
+		dvdauthxml += "<button>jump menu 3;</button>\n" #no idea - should go to titleset 1 menu 1
 		dvdauthxml += "<button>jump menu 2;</button>\n"
 		dvdauthxml += '<vob file="mainmenu.mpg" pause="inf" />' + "\n"
 		dvdauthxml += "</pgc>\n"

@@ -344,7 +344,7 @@ class BoutRender(object):
 				next = '{0:^10.10}'.format("Credits")
 			else:
 				next = '{0:^10.10}'.format("Next")
-			drawoutlinedtext(d,getcentredloc(d,next,font,spacing),400,next,font,ol,fg)
+			drawoutlinedtext(d,getcentredloc(d,next,font,4*spacing),400,next,font,ol,fg)
 			i.save( fname, "PNG", transparency=0)
 					
 		#render blocks of 4, width=10 chars + 2 char padding

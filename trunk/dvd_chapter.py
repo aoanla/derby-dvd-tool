@@ -248,7 +248,7 @@ class BoutRender(object):
 		self.makeMainMenuSubImage("main")
 		#mux
 		menuxml = "<subpictures><stream>\n" #do button size for autobutton mode
-		menuxml += '<spu force="yes" start="00:00:00:00" image="mainn.png" select="mains.png" highlight="mainh.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
+		menuxml += '<spu force="yes" start="00:00:00:00" image="mainn.png" select="mains.png" highlight="mainh.png" autooutline="infer" outlinewidth="20" autoorder="rows" >' + "\n"
 		menuxml += "</spu></stream></subpictures>\n"
 		#and write out
 		f = open("mainspumux.xml",'w')
@@ -283,7 +283,7 @@ class BoutRender(object):
 		self.makeSubtitlesSubImage("subtitles")
 		#mux
 		menuxml = "<subpictures><stream>\n" #do button size for autobutton mode
-		menuxml += '<spu force="yes" start="00:00:00:00" image="subtitlesn.png" select="subtitless.png" highlight="subtitlesh.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
+		menuxml += '<spu force="yes" start="00:00:00:00" image="subtitlesn.png" select="subtitless.png" highlight="subtitlesh.png" autooutline="infer" outlinewidth="20" autoorder="rows" >' + "\n"
 		menuxml += "</spu></stream></subpictures>\n"
 		#and write out
 		f = open("subtitlesspumux.xml",'w')
@@ -530,7 +530,7 @@ class BoutRender(object):
 		for boutnum in range(len(self.Bouts)):
 			dark=[] #detect dark team colours, so we can give them light outlines
 			for t in self.Bouts[boutnum].Teams:
-				if reduce(lambda x, y: x+(y*y), t.TeamCol) < 20000 : #"size" of colour
+				if sum([i*i for i in t.TeamCol]) < 20000 : #"size" of colour
 					dark.append(True)
 				else:
 					dark.append(False)	
@@ -667,23 +667,25 @@ class BoutRender(object):
 		dvdauthxml += "</fpc>\n"
 		#define the main menu here in the vmgm
 		dvdauthxml += "<menus>\n"
-		dvdauthxml += "<pgc>\n"	
+		
+		dvdauthxml += "<pgc>\n"
+		dvdauthxml += "<pre> g2=0; </pre>"	
 		self.makeMainMenu()
 		#TODO - jump to titleset 1 title 1 (the movie) or titleset 1 menu 1 (first chapter menu)
 		# or jump to menu 2 (in the vmgm), the subtitles menu. 
 		#The obvious doesn't work as vmgms can't do this, apparently..
 		dvdauthxml += "<button>jump title 1;</button>\n" #probably works
-		dvdauthxml += "<button>jump menu 3;</button>\n" #no idea - should go to titleset 1 menu 1
+		dvdauthxml += "<button> {g2=1; jump title 1;}</button>\n" #no idea - should go to titleset 1 menu 1
 		dvdauthxml += "<button>jump menu 2;</button>\n"
 		dvdauthxml += '<vob file="mainmenu.mpg" pause="inf" />' + "\n"
 		dvdauthxml += "</pgc>\n"
 		dvdauthxml += '<pgc>' + "\n"
 		self.makeSubtitlesMenu()
 		#TODO - the subtitles menu (set subtitles to none,0,1,2 = working from references)
-		dvdauthxml += "<button> g1 = 62;</button>\n"
-		dvdauthxml += "<button> g1 = 64;</button>\n"
-		dvdauthxml += "<button> g1 = 65;</button>\n"
-		dvdauthxml += "<button> g1 = 66;</button>\n"
+		dvdauthxml += "<button> g1=62;</button>\n"
+		dvdauthxml += "<button> g1=64;</button>\n"
+		dvdauthxml += "<button> g1=65;</button>\n"
+		dvdauthxml += "<button> g1=66;</button>\n"
 		dvdauthxml += "<button> jump menu 1;</button>\n" #hopefully, go back to main menu 
 		dvdauthxml += '<vob file="subtitlesmenu.mpg" pause="inf" />' + "\n"
 		dvdauthxml += "</pgc>\n"
@@ -710,7 +712,7 @@ class BoutRender(object):
 			#make xml for spumux (this stuff is output to menuspumux.xml not the auth.xml)
 			#remember to add autobutton detection, in row then column mode
 			menuxml = "<subpictures><stream>\n"
-			menuxml += '<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" autooutline="infer" outlinewidth="20" autorder="rows" >' + "\n"
+			menuxml += '<spu force="yes" start="00:00:00:00" image="' + fname + 'n.png" select="' + fname + 's.png" highlight="' + fname + 'h.png" autooutline="infer" outlinewidth="20" autoorder="rows" >' + "\n"
 			menuxml += "</spu></stream></subpictures>\n"
 			#and write out
 			f = open("menuspumux.xml",'w')
@@ -742,7 +744,7 @@ class BoutRender(object):
 		dvdauthxml += '<audio format="ac3" channels="2" />' + "\n"
 		dvdauthxml += "<pgc>\n"
 		#hopefully this pre will load the selected subtitle into the "subtitle" system register
-		dvdauthxml += "<pre> s2 = g1; </pre>\n"
+		dvdauthxml += "<pre> {s2=g1; if (g2==1) call menu ;}</pre>\n"
 		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c[0] for c in self.ChapList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"

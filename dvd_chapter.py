@@ -120,7 +120,8 @@ class Status(object):
 			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
 			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
 			if e.Type == POWER_STATUS: #if the team just got a power jam, remove the power jam from the other team
-				self.Teams[2 - e.Team] = tr_dict[POWEREND](self.Teams[2 - e.Team]) 
+				self.Teams[2 - e.Team] = tr_dict[POWEREND](self.Teams[2 - e.Team])
+				self.Teams[2 - e.Team] = self.Teams[2 - e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
 			
 #masks for Status
 LEAD_STATUS=1

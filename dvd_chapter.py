@@ -191,7 +191,7 @@ class BoutRender(object):
 		ol = [3 if c else 1 for c in dark] #bright outline for dark colours
 		string1 = '{0:<20.20}'.format(self.Bouts[boutnum].Teams[0].TeamName) 
 		string1 += '  ' + '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
-		string2 = 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0<2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
+		string2 = 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0>2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
 		string3 = '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[1])
 		string3 += '  ' + '{0:>20.20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
@@ -634,7 +634,7 @@ class BoutRender(object):
 		self.ChapList = []
 		for b in self.Bouts:
 			bname = ""
-			if b.Name is None:
+			if b.Name is not None:
 				bname = b.Name
 			else: #construct bout name from Team names
 				#this will always be too long (>10 chars)
@@ -736,10 +736,10 @@ class BoutRender(object):
 			for (chapter,index) in zip(block,range(i,i+8)):
 				dvdauthxml += "<button>jump title 1 chapter " + str(index+1) + ";</button>\n"
 			dvdauthxml += "<button>" 
-			if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
+			if not first: dvdauthxml +=  "jump menu " + str((i//8)+1) #assuming menus start at 1
 			else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
 			dvdauthxml += ";</button>\n"
-			if not last : dvdauthxml += "<button> jump menu " + str((i//8)+1) + ";</button>\n" #assuming menus start at 1 
+			if not last : dvdauthxml += "<button> jump menu " + str((i//8)+2) + ";</button>\n" #assuming menus start at 1 
 			else: dvdauthxml += "<button>jump title 2;</button>\n" # credits as a separate title
 			dvdauthxml += '<vob file="'+fname+'.mpg" pause="inf" />' + "\n"
 	

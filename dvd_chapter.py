@@ -398,9 +398,12 @@ class BoutRender(object):
 				
 				#get the team colour to make fancy coloured credits
 				tfg = t.TeamCol
-				if (tfg[0] < 128) & (tfg[1] < 128) & (tfg[2] < 128): #dark colour needs light ol
-					scale = 255/max(tfg)
-					tol = tuple([(c/scale) if (c/scale) > 128 else 128 for c in tfg])
+				if (max(tfg) < 128): #dark colour needs light ol
+					if max(tfg) != 0:
+						scale = 255/max(tfg)
+						tol = tuple([(c/scale) if (c/scale) > 128 else 128 for c in tfg])
+					else: #black
+						tol = (230,230,230)		
 				else: #light colour needs dark ol
 					tol = tuple([c/4 for c in tfg])
 				credit_txt.append((t.LeagueName,y,tol,tfg))

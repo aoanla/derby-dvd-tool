@@ -768,7 +768,7 @@ class BoutRender(object):
 		dvdauthxml += '<audio format="ac3" channels="2" />' + "\n"
 		dvdauthxml += "<pgc>\n"
 		#hopefully this pre will load the selected subtitle into the "subtitle" system register
-		dvdauthxml += "<pre> {s2=g1; if (g2==1) {g2=0; call menu ;};}</pre>\n"
+		dvdauthxml += "<pre> {s2=g1; if (g2==1) {g2=0; call menu ;}}</pre>\n"
 		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c[0] for c in self.ChapList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"

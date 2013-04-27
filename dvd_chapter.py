@@ -399,7 +399,8 @@ class BoutRender(object):
 				#get the team colour to make fancy coloured credits
 				tfg = t.TeamCol
 				if (tfg[0] < 128) & (tfg[1] < 128) & (tfg[2] < 128): #dark colour needs light ol
-					tol = tuple([((c*3)/2) if c>80 else 128 for c in tfg])
+					scale = 255/max(tfg)
+					tol = tuple([(c/scale) if (c/scale) > 128 else 128 for c in tfg])
 				else: #light colour needs dark ol
 					tol = tuple([c/4 for c in tfg])
 				credit_txt.append((t.LeagueName,y,tol,tfg))
@@ -517,8 +518,8 @@ class BoutRender(object):
 			 	
 		spumuxxml += '<spu start="' + starttime+'" end="' + endtime + '" image="' + outname + '"  >' + "\n"
 		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team1Colour) + '" />' + "\n"
+		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team2Colour) + '" />' + "\n"
 			#Above does the below pseudocode, with a suitably patched spumux binary(!)
 			#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 			#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
@@ -764,7 +765,7 @@ class BoutRender(object):
 		dvdauthxml += '<audio format="ac3" channels="2" />' + "\n"
 		dvdauthxml += "<pgc>\n"
 		#hopefully this pre will load the selected subtitle into the "subtitle" system register
-		dvdauthxml += "<pre> {s2=g1; if (g2==1) call menu ;}</pre>\n"
+		dvdauthxml += "<pre> {s2=g1; if (g2==1) {g2==0; call menu ;};}</pre>\n"
 		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c[0] for c in self.ChapList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"

@@ -493,30 +493,36 @@ class BoutRender(object):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
 		#Should actually do this for every 5 second interval in range endtime-starttime
 		start = starttime.split(':')		
-		end = endtime.split(':')
+		#end = endtime.split(':')
 		#calculate time in seconds between the starts and ends
-		def timeoffset(secs):
-			secsval = secs + int(start[-1][:2])
-			minval = int(start[-2]) + (secsval//60)
-			tmp = ['{0:02}'.format(int(start[0])+(minval//60)),]
-			tmp.append('{0:02}'.format((secsval//60)+int(start[-2])))
-			tmp.append('{0:02}'.format(secsval%60))
-			return ':'.join(tmp)
-		ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
-		esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
-		rng = esecs - ssecs
-		for s in range(0,rng,5):
-			starttime = timeoffset(s)
-			etime = timeoffset(s+5) if (s+5) <= rng else endtime 
+		#def timeoffset(secs):
+		#	secsval = secs + int(start[-1][:2])
+		#	minval = int(start[-2]) + (secsval//60)
+		#	tmp = ['{0:02}'.format(int(start[0])+(minval//60)),]
+		#	tmp.append('{0:02}'.format(minval%60))
+		#	tmp.append('{0:02}'.format(secsval%60))
+		#	return ':'.join(tmp)
+		#ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
+		#esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
+		#rng = esecs - ssecs
+		#for s in range(0,rng,5):
+		#DON'T DO 5 SECOND SUBS, IT'S ANNOYINGLY PULSEY
+		#start subs 1 second after chapter
+		secsval = int(start[-1][:2])+1
+		minval = int(start[-2]) + (secsval//60)
+		hrval = int(start[-3]) + (minval//60)
+		
+		starttime = ':'.join(['{0:02}'.format(hrval),'{0:02}'.format(minval%60),'{0:02}'.format(secsval%60)])
+			#etime = timeoffset(s+5) if (s+5) <= rng else endtime 
 			 	
-			spumuxxml += '<spu start="' + starttime+'.05" end="' + etime + '" image="' + outname + '"  >' + "\n"
-			spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-			spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
-			spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<spu start="' + starttime+'" end="' + endtime + '" image="' + outname + '"  >' + "\n"
+		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
+		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
 			#Above does the below pseudocode, with a suitably patched spumux binary(!)
 			#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 			#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
-			spumuxxml += "</row>\n</spu>\n"	
+		spumuxxml += "</row>\n</spu>\n"	
 		return spumuxxml
 
 	def RenderSubtitles(self):
@@ -568,7 +574,7 @@ class BoutRender(object):
 				#
 				#offset StartTime, want it to be 0.05 seconds later than this, to avoid previous sub start, and chapters
 				#consider making AddSpumxxml add copies of subtitle every five seconds in range, to get people switching subtitles...
-				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime+".05",jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 				for j in range(len(Jam.Events)):
 					status = Status(Jam.Events[0:j+1])
@@ -582,7 +588,7 @@ class BoutRender(object):
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
 						endtime = Jam.Events[j+1].Time
-					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time+".05",endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 					#update JammerScore
 					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
@@ -597,13 +603,19 @@ class BoutRender(object):
 					except OSError as e:
 						print >>sys.stderr, "Execution failed:", e
 
-					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time+".05",endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 	
 		#and close the xml streams
 		spumuxxmls = [i+"</stream>\n</subpictures>\n" for i in spumuxxmls]
 
 		#write spumuxxmls to files
 		#and mux with spumux
+		#for i in range(len(spumuxxmls)):
+		#	f = open("spumux"+str(i)+".xml",'w')
+		#	f.write(spumuxxmls[i])
+		#	f.flush()
+		#	f.close()		
+		#sys.exit(0)
 		
 		for i in range(len(spumuxxmls)):
 			#write out config

@@ -200,7 +200,7 @@ class BoutRender(object):
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,22,string1,font,ol[0],2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
-		drawoutlinedtext(d,getrightalignedloc(d,707,string3,font),22,string3,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,695,string3,font),22,string3,font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status,dark=[False,False]):
@@ -222,20 +222,20 @@ class BoutRender(object):
 		append = [["(SP)",""],[" LJ",""],[" PJ",""]]
 		for i in range(2):
 			if status.Teams[i] & STAR_STATUS == STAR_STATUS : 
-				jammers.append(prepend[0][i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:21]+append[0][i])
+				jammers.append(prepend[0][i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:20]+append[0][i])
 			else:  
-				jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i][0:25])
+				jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i][0:24])
 			if status.Teams[i] & LEAD_STATUS == LEAD_STATUS :
 				jammers[i] = prepend[1][i] + jammers[i] + append[1][i]
 			if status.Teams[i] & POWER_STATUS == POWER_STATUS :
 				jammers[i] = prepend[2][i] + jammers[i] + append[2][i]
 
-		string1 = '{0:<28.28}'.format(jammers[0])
-		string2 = '{0:>28.28}'.format(jammers[1])
+		string1 = '{0:<27.27}'.format(jammers[0])
+		string2 = '{0:>27.27}'.format(jammers[1])
 		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,550,string1,font,ol[0],2)
-		drawoutlinedtext(d,getrightalignedloc(d,707,string2,font),550,string2,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,695,string2,font),550,string2,font,ol[1],2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		#statusstrs = ["",""]
@@ -322,7 +322,7 @@ class BoutRender(object):
 				l = spacing * y + (spacing/2) #nicely vertically centre!
 				drawoutlinedtext(d,getcentredloc(d,txt,font),l,txt,font,ol,fg)
 			#do menu design stuff
-			drawoutlinedtext(d,getrightalignedloc(d,700,"Back",font),spacing*(5.5),"Back",font,ol,fg)
+			drawoutlinedtext(d,getrightalignedloc(d,650,"Back",font),spacing*(5.5),"Back",font,ol,fg)
 			i.save( fname, "PNG", transparency=0)
 		
 	def makeMenuSubImage(self,filename,Chapters,last=False):
@@ -755,7 +755,7 @@ class BoutRender(object):
 			for (chapter,index) in zip(block,range(i,i+8)):
 				dvdauthxml += "<button>jump title 1 chapter " + str(index+1) + ";</button>\n"
 			dvdauthxml += "<button>" 
-			if not first: dvdauthxml +=  "jump menu " + str((i//8)+1) #assuming menus start at 1
+			if not first: dvdauthxml +=  "jump menu " + str(i//8) #assuming menus start at 1
 			else: dvdauthxml += "jump vmgm menu 1" #the main menu is jumped to by the first back button in the set of chapter menus
 			dvdauthxml += ";</button>\n"
 			if not last : dvdauthxml += "<button> jump menu " + str((i//8)+2) + ";</button>\n" #assuming menus start at 1 

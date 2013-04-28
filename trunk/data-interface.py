@@ -178,7 +178,9 @@ class JamsDialog(SD.Dialog):
 			self._add_eventrow(fr,self.JamEntries[i])
 			#and add the button for events (see below for callback)
 			eventbut = Tk.Button(jamframes[-1],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[i]))
-			eventbut.pack(side=Tk.RIGHT)
+			eventbut.pack(side=Tk.LEFT)
+			removebut = Tk.Button(jamframes[-1],text="Remove Event Row", command=self.remove_eventrow(self.JamEntries[i]))
+			removebut.pack(side=Tk.LEFT)
 		#need to be able to add more jam rows
 		Tk.Button(f,text="Add more jams",command=self.add_jams(f)).pack(side=Tk.BOTTOM) #pack at bottom so always lowest thing
 
@@ -272,7 +274,9 @@ class JamsDialog(SD.Dialog):
 		self._add_eventrow(fr,self.JamEntries[-1])
 		#and add the button for events (see below for callback)
 		eventbut = Tk.Button(jamframes[-1],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[-1]))
-		eventbut.pack(side=Tk.RIGHT)
+		eventbut.pack(side=Tk.LEFT)
+		removebut = Tk.Button(jamframes[-1],text="Remove Event Row", command=self.remove_eventrow(entry))
+		removebut.pack(side=Tk.LEFT)
 
 	def add_eventrow(self,frame,entry):
 		return lambda: self._add_eventrow(frame,entry)
@@ -293,6 +297,20 @@ class JamsDialog(SD.Dialog):
 			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i).pack(side=Tk.LEFT)
 		entry.append(row)
 
+	def remove_eventrow(self,entry):
+		return lambda: self._remove_eventrow(entry)
+	
+	def _remove_eventrow(self,entry):
+		i = len(entry) - 1 
+		if i < 10:
+			return #no useful events left to remove
+		tmp = entry.pop(i) #remove row from entry list
+		#get the master frame for this row
+		f = tmp[0].master
+		for child in f.children.values(): #and iterate destroying all associated widgets
+			child.destroy()
+		f.destroy()
+		
 	def apply(self):
 		#self.data[1] is the Bout structure, don't clobber it!
 		self.data[0] = []

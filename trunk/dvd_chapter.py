@@ -196,9 +196,11 @@ class BoutRender(object):
 		string3 += '  ' + '{0:>20.20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
 		#regularise team name + score lines to standard length
-		drawoutlinedtext(d,6,22,string1,font,ol[0],2)
+		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
+		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
+		drawoutlinedtext(d,13,22,string1,font,ol[0],2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,707,string3,font),22,string3,font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status,dark=[False,False]):
@@ -230,9 +232,10 @@ class BoutRender(object):
 
 		string1 = '{0:<28.28}'.format(jammers[0])
 		string2 = '{0:>28.28}'.format(jammers[1])
-		
-		drawoutlinedtext(d,6,550,string1,font,ol[0],2)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,ol[1],2)
+		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
+		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
+		drawoutlinedtext(d,13,550,string1,font,ol[0],2)
+		drawoutlinedtext(d,getrightalignedloc(d,707,string2,font),550,string2,font,ol[1],2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		#statusstrs = ["",""]
@@ -251,7 +254,7 @@ class BoutRender(object):
 	def makeMainMenu(self):
 		"""Make the main menu, from a standard backdrop"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i " +self.MainSrc+" -i /usr/share/devede/silence.ogg -target dvd main.mpg",shell=True)
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i " +self.MainSrc+" -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 main.mpg",shell=True)
 		#make subimages
 		self.makeMainMenuSubImage("main")
 		#mux
@@ -286,7 +289,7 @@ class BoutRender(object):
 	def makeSubtitlesMenu(self):
 		"""Make the Subtitles selection menu, from standard backdrop + subtitle menus"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc + " -i /usr/share/devede/silence.ogg -target dvd subtitles.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc + " -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 subtitles.mpg",shell=True)	
 		#make subimages
 		self.makeSubtitlesSubImage("subtitles")
 		#mux
@@ -346,13 +349,13 @@ class BoutRender(object):
 				drawoutlinedtext(d,getcentredloc(d,string,font,x),y,string,font,ol,fg)
 	
 			back = '{0:^10.10}'.format("Back")
-			drawoutlinedtext(d,getcentredloc(d,back,font,spacing),400,back,font,ol,fg)
+			drawoutlinedtext(d,getcentredloc(d,back,font,spacing+20),400,back,font,ol,fg)
 			next = ""
 			if last:
 				next = '{0:^10.10}'.format("Credits")
 			else:
 				next = '{0:^10.10}'.format("Next")
-			drawoutlinedtext(d,getcentredloc(d,next,font,4*spacing),400,next,font,ol,fg)
+			drawoutlinedtext(d,getcentredloc(d,next,font,4*spacing-20),400,next,font,ol,fg)
 			i.save( fname, "PNG", transparency=0)
 					
 		#render blocks of 4, width=10 chars + 2 char padding
@@ -719,7 +722,7 @@ class BoutRender(object):
 		dvdauthxml += "<menus>\n"
 		#start making chapter menus
 		#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere, and consider if input jpg is configurable
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc +" -i /usr/share/devede/silence.ogg -target dvd menubackdrop.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc +" -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 menubackdrop.mpg",shell=True)	
 		#then make lots of chapter menus with it
 		
 		self.GenChapters() #make our chapters

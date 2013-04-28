@@ -1,0 +1,227 @@
+diff U3wB compat.c compat.c
+--- compat.c	Thu Jan 15 09:14:12 1970
++++ compat.c	Thu Jan 15 09:14:12 1970
+@@ -1401,16 +1401,24 @@
+           } /*if*/
+       /* must be hex */
+           {
+-            int componentlength, componentscale, componentindex;
++            int componentlength, componentscale, componentindex, componentcount;
+             src = colorstr + (colorstr[0] == '#' ? 1 : 0);
+-            if (srcend - src > 12 || (srcend - src) % 3 != 0)
++            if (srcend - src > 12 || ((srcend - src) % 3 != 0 && (srcend - src) % 4 != 0))
+               {
+                 errmsg = "bad hex color string";
+                 break;
+               } /*if*/
+-            componentlength = (srcend - src) / 3;
++            if ((srcend - src) % 3 == 0)
++              {
++                componentcount = 3;
++              }
++            else
++              {
++                componentcount = 4;
++              } /*if*/
++            componentlength = (srcend - src) / componentcount;
+             componentscale = (1 << 4 * componentlength) - 1;
+-            for (componentindex = 0; componentindex < 3; ++componentindex)
++            for (componentindex = 0; componentindex < componentcount; ++componentindex)
+               {
+                 int component, j;
+                 unsigned char * dest;
+@@ -1440,10 +1448,16 @@
+                 case 2:
+                     dest = &result.b;
+                 break;
++                case 3:
++                    dest = &result.a;
++                break;
+                   } /*switch*/
+                 *dest = component * 255 / componentscale;
+               } /*for*/
++              if (componentcount == 3)
++                {
+             result.a = 255;
++                }
+           }
+       }
+     while (false);
+diff U3wB subgen-encode.c subgen-encode.c
+--- subgen-encode.c	Thu Jan 15 09:14:12 1970
++++ subgen-encode.c	Thu Jan 15 09:14:12 1970
+@@ -487,6 +487,8 @@
+     int ystart, ysize;
+     int next_command_ptr;
+     int offset0, offset1;
++    int i, j;
++    int numrows, chg_colcon_size;
+     int y;
+     unsigned char *icptr;
+ 
+@@ -495,6 +497,7 @@
+     ystart = s->y0;
+     ysize = s->yd;
+ 
++    numrows = s->numrows;
+ 
+ /*
+   720 x 576 = 414720 bytes, for a 2 bit bitmap = 103680 bytes, compressing MUST reduce this to less then 65536 bytes,
+@@ -594,6 +597,36 @@
+     store_1(SPU_SET_DSPXA);
+     store_2(offset0);
+     store_2(offset1);
++
++    /* command 7, color and contrast changes, 4 bytes/line, 6 bytes/column */
++    if(numrows > 0) {
++        fprintf(stderr, "INFO: numrows:  %d\n", numrows);
++        store_1(SPU_CHG_COLCON);
++        chg_colcon_size = 6;
++        for(i = 0; i < numrows; i++) {
++            fprintf(stderr, "INFO: numcolumns:  %d\n", s->rows[i].numcolumns);
++            chg_colcon_size += ((s->rows[i].numcolumns * 6) +4);
++        }
++        store_2(chg_colcon_size);
++        for(i = 0; i < numrows; i++) {
++            store_nibble(0);
++            store_trinibble(s->rows[i].start);
++            store_nibble(s->rows[i].numcolumns);
++            store_trinibble(s->rows[i].end);
++            for(j = 0; j < s->rows[i].numcolumns; j++) {
++                store_2(s->rows[i].columns[j].start);
++                store_nibble(findmasterpal(s,&s->rows[i].columns[j].pal[3]));
++                store_nibble(findmasterpal(s,&s->rows[i].columns[j].pal[2]));
++                store_nibble(findmasterpal(s,&s->rows[i].columns[j].pal[1]));
++                store_nibble(findmasterpal(s,&s->rows[i].columns[j].pal[0]));
++                store_nibble(s->rows[i].columns[j].pal[3].a>>4);
++                store_nibble(s->rows[i].columns[j].pal[2].a>>4);
++                store_nibble(s->rows[i].columns[j].pal[1].a>>4);
++                store_nibble(s->rows[i].columns[j].pal[0].a>>4);
++            }
++        }
++        store_4(0x0FFFFFFF);
++    }
+ 
+     /* command 0xff, end command block, 1 byte, */
+     store_1(SPU_CMD_END);
+diff U3wB subgen-parse-xml.c subgen-parse-xml.c
+--- subgen-parse-xml.c	Thu Jan 15 09:14:12 1970
++++ subgen-parse-xml.c	Thu Jan 15 09:14:12 1970
+@@ -89,6 +89,8 @@
+     had_textsub = false; /* whether I've seen <textsub> */
+ static stinfo *curspu = 0; /* current <spu> directive collected here */
+ static button *curbutton=0;
++static chg_colcon_row *currow=0;
++static chg_colcon_column *curcolumn=0;
+ static char * filename = 0;
+ 
+ static void stream_begin()
+@@ -195,6 +197,32 @@
+     curspu = 0;
+ }
+ 
++static void row_begin()
++{
++    curspu->rows = realloc(curspu->rows, (curspu->numrows + 1) * sizeof(chg_colcon_row));
++    currow = &curspu->rows[curspu->numrows++];
++    memset(currow, 0, sizeof(chg_colcon_row));
++}
++
++static void row_startline(const char *v) { currow->start = strtounsigned(v, "row startline"); }
++static void row_endline(const char *v) { currow->end = strtounsigned(v, "row endline"); }
++
++static void row_complete()
++{
++
++}
++
++static void column_begin()
++{
++    curcolumn = &currow->columns[currow->numcolumns++];
++}
++
++static void column_start(const char *v) { curcolumn->start = strtounsigned(v, "column start"); }
++static void column_b(const char *v) { curcolumn->pal[0] = parse_color(v, "column b"); }
++static void column_p(const char *v) { curcolumn->pal[1] = parse_color(v, "column p"); }
++static void column_e1(const char *v) { curcolumn->pal[2] = parse_color(v, "column e1"); }
++static void column_e2(const char *v) { curcolumn->pal[3] = parse_color(v, "column e2"); }
++
+ static void button_begin()
+ {
+     curspu->buttons = realloc(curspu->buttons, (curspu->numbuttons + 1) * sizeof(button));
+@@ -410,7 +438,8 @@
+     SPU_BEGIN=0, /* initial state must be 0 */
+     SPU_ROOT, /* expect <stream> */
+     SPU_STREAM, /* expect <spu> or <textsub> */
+-    SPU_SPU, /* within <spu>, expect <button> or <action> */
++    SPU_SPU, /* within <spu>, expect <row> <button> or <action> */
++    SPU_ROW, /* within <row>, expect <column> */
+     SPU_NOSUB /* not expecting subtags */
+ };
+ 
+@@ -418,6 +447,8 @@
+     {"subpictures",SPU_BEGIN,SPU_ROOT,0,0},
+     {"stream",SPU_ROOT,SPU_STREAM,stream_begin,0},
+     {"spu",SPU_STREAM,SPU_SPU,spu_begin,spu_complete},
++    {"row",SPU_SPU,SPU_ROW,row_begin,row_complete},
++    {"column",SPU_ROW,SPU_NOSUB,column_begin,0},
+     {"button",SPU_SPU,SPU_NOSUB,button_begin,0},
+     {"action",SPU_SPU,SPU_NOSUB,action_begin,0},
+     {"textsub",SPU_STREAM,SPU_NOSUB,textsub_begin,textsub_complete},
+@@ -438,6 +469,13 @@
+     {"spu","force",spu_force},
+     {"spu","xoffset",spu_xoffset},
+     {"spu","yoffset",spu_yoffset},
++    {"row","startline",row_startline},
++    {"row","endline",row_endline},
++    {"column","start",column_start},
++    {"column","b",column_b},
++    {"column","p",column_p},
++    {"column","e1",column_e1},
++    {"column","e2",column_e2},
+     {"button","name",button_label},
+     {"button","up",button_up},
+     {"button","down",button_down},
+diff U3wB subgen.c subgen.c
+--- subgen.c	Thu Jan 15 09:14:12 1970
++++ subgen.c	Thu Jan 15 09:14:12 1970
+@@ -538,7 +538,7 @@
+                             "ERR:  Sub with too short or negative duration on line %d, skipping\n",\
+                             spuindex - 1);
+                   } /*if*/
+-                exit(1);
++                //exit(1); /* Why quit here? */
+                 nr_subtitles_skipped++;
+                 continue;
+               } /*if*/
+diff U3wB subgen.h subgen.h
+--- subgen.h	Thu Jan 15 09:14:12 1970
++++ subgen.h	Thu Jan 15 09:14:12 1970
+@@ -38,6 +38,18 @@
+     int grp; /* which group button belongs to */
+ } button;
+ 
++typedef struct {
++    int start; /* starting column number */
++    colorspec pal[4]; /* palette for column */
++} chg_colcon_column;
++
++typedef struct {
++    int start; /* starting line number */
++    int numcolumns; /* columns in the row */
++    chg_colcon_column columns[8]; /* columns in the row */
++    int end; /* ending line number */
++} chg_colcon_row;
++
+ typedef struct { /* representation of a subpicture and associated buttons */
+     unsigned int x0, y0; /* top-left coords of pixels actually present */
+     unsigned int xd, yd;
+@@ -54,6 +66,8 @@
+     colorspec pal[4]; /* palette for fimg */
+     colorspec masterpal[16];
+     colorspec transparentc;
++    int numrows; /* number of chg_colcon rows */
++    chg_colcon_row *rows;
+     int numgroups; /* how many button groups */
+     int groupmap[3][4]; /* colour table for each button group, -1 for unused entries in each group */
+     button *buttons; /* array of buttons */

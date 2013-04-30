@@ -584,7 +584,7 @@ class BoutRender(object):
 				secs = seconds % 60
 				mins = (seconds % 3600) // 60
 				hrs = (seconds) // 3600
-				jstarttime = ':'.join(['{0:02}'.format(i) for i in [hrs,mins.secs]])
+				jstarttime = ':'.join(['{0:02}'.format(i) for i in [hrs,mins,secs]])
 				#consider making AddSpumxxml add copies of subtitle every five seconds in range, to get people switching subtitles...
 				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],jstarttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 

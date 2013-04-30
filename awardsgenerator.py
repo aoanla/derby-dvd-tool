@@ -53,7 +53,8 @@ for s in lst:
 		command = "convert "+s+" black720.png -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
 		subprocess.call(command,shell=True)
 
-#ffmpeg -i output%d.png -i silence.mp3 -target pal-dvd -aspect 4:3 awards.mpg
+#and ffmpeg (or avconv in newer releases) it into a dvd-suitable movie file (supply silence.mp3)
+subprocess.call("ffmpeg -i output%03d.png -i silence.mp3 -target pal-dvd -aspect 4:3 awards.mpg", shell=True)
 
 #btw, the way to get high quality output from cinelerra is to output to high quality Quicktime for Linux, MPEG4 Video, then ffmpeg it to dvd
 		

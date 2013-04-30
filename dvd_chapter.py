@@ -200,7 +200,7 @@ class BoutRender(object):
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,22,string1,font,ol[0],2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
-		drawoutlinedtext(d,getrightalignedloc(d,695,string3,font),22,string3,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status,dark=[False,False]):
@@ -223,7 +223,10 @@ class BoutRender(object):
 		for i in range(2):
 			if status.Teams[i] & STAR_STATUS == STAR_STATUS : 
 				jammers.append(prepend[0][i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:20]+append[0][i])
-			else:  
+			else:
+				print self.Bouts[boutnum].Jams[jamnum].Jammers[i]
+				print boutnum
+				print jamnum  
 				jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i][0:24])
 			if status.Teams[i] & LEAD_STATUS == LEAD_STATUS :
 				jammers[i] = prepend[1][i] + jammers[i] + append[1][i]
@@ -235,7 +238,7 @@ class BoutRender(object):
 		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,550,string1,font,ol[0],2)
-		drawoutlinedtext(d,getrightalignedloc(d,695,string2,font),550,string2,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,ol[1],2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		#statusstrs = ["",""]
@@ -580,11 +583,11 @@ class BoutRender(object):
 						jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
 				#
 				#offset StartTime, want it to be 1 seconds later than this, to avoid previous sub start, and chapters
-				seconds = sum([ int(i[0])*i[1] for i in zip(Jam.StartTime.split(':'),[3600,60,1]) ] ) + 1
+				seconds = sum([ int(k[0])*k[1] for k in zip(Jam.StartTime.split(':'),[3600,60,1]) ] ) + 1
 				secs = seconds % 60
 				mins = (seconds % 3600) // 60
 				hrs = (seconds) // 3600
-				jstarttime = ':'.join(['{0:02}'.format(i) for i in [hrs,mins,secs]])
+				jstarttime = ':'.join(['{0:02}'.format(s) for s in [hrs,mins,secs]])
 				#consider making AddSpumxxml add copies of subtitle every five seconds in range, to get people switching subtitles...
 				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],jstarttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 

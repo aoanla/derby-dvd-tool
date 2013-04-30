@@ -499,30 +499,30 @@ class BoutRender(object):
 	def AddSpumuxxml(self,spumuxxml, starttime, endtime, outname, NeutralColour, Team1Colour, Team2Colour):
 		#Add a subpicture's xml to the provided spumuxxml stream, with a "colour change" in the vertical middle of the subpicture
 		#Should actually do this for every 5 second interval in range endtime-starttime
-		start = starttime.split(':')		
-		#end = endtime.split(':')
-		#calculate time in seconds between the starts and ends
-		#def timeoffset(secs):
-		#	secsval = secs + int(start[-1][:2])
-		#	minval = int(start[-2]) + (secsval//60)
-		#	tmp = ['{0:02}'.format(int(start[0])+(minval//60)),]
-		#	tmp.append('{0:02}'.format(minval%60))
-		#	tmp.append('{0:02}'.format(secsval%60))
-		#	return ':'.join(tmp)
-		#ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
-		#esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
-		#rng = esecs - ssecs
-		#for s in range(0,rng,5):
-		#DON'T DO 5 SECOND SUBS, IT'S ANNOYINGLY PULSEY
-		#start subs 1 second after chapter
-		secsval = int(start[-1][:2])+1
-		minval = int(start[-2]) + (secsval//60)
-		hrval = int(start[-3]) + (minval//60)
+		#start = starttime.split(':')		
+		##end = endtime.split(':')
+		##calculate time in seconds between the starts and ends
+		##def timeoffset(secs):
+		##	secsval = secs + int(start[-1][:2])
+		##	minval = int(start[-2]) + (secsval//60)
+		##	tmp = ['{0:02}'.format(int(start[0])+(minval//60)),]
+		##	tmp.append('{0:02}'.format(minval%60))
+		##	tmp.append('{0:02}'.format(secsval%60))
+		##	return ':'.join(tmp)
+		##ssecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(start,[3600,60,1])])
+		##esecs = reduce(lambda x,y : x+y, [int(i[0][:2])*i[1] for i in zip(end, [3600,60,1])])
+		##rng = esecs - ssecs
+		##for s in range(0,rng,5):
+		##DON'T DO 5 SECOND SUBS, IT'S ANNOYINGLY PULSEY
+		##start subs 1 second after chapter
+		#secsval = int(start[-1][:2])+1
+		#minval = int(start[-2]) + (secsval//60)
+		#hrval = int(start[-3]) + (minval//60)
 		
-		starttime = ':'.join(['{0:02}'.format(hrval),'{0:02}'.format(minval%60),'{0:02}'.format(secsval%60)])
+		#starttime = ':'.join(['{0:02}'.format(hrval),'{0:02}'.format(minval%60),'{0:02}'.format(secsval%60)])
 			#etime = timeoffset(s+5) if (s+5) <= rng else endtime 
 			 	
-		spumuxxml += '<spu start="' + starttime+'" end="' + endtime + '" image="' + outname + '"  >' + "\n"
+		spumuxxml += '<spu start="' + starttime+'.1" end="' + endtime + '" image="' + outname + '"  >' + "\n"
 		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
 		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team1Colour) + '" />' + "\n"
 		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team2Colour) + '" />' + "\n"
@@ -579,9 +579,14 @@ class BoutRender(object):
 					if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
 						jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
 				#
-				#offset StartTime, want it to be 0.05 seconds later than this, to avoid previous sub start, and chapters
+				#offset StartTime, want it to be 1 seconds later than this, to avoid previous sub start, and chapters
+				seconds = sum([ int(i[0])*i[1] for i in zip(Jam.StartTime.split(':'),[3600,60,1]) ] ) + 1
+				secs = seconds % 60
+				mins = (seconds % 3600) // 60
+				hrs = (seconds) // 3600
+				jstarttime = ':'.join(['{0:02}'.format(i) for i in [hrs,mins.secs]])
 				#consider making AddSpumxxml add copies of subtitle every five seconds in range, to get people switching subtitles...
-				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],Jam.StartTime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
+				spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],jstarttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 				for j in range(len(Jam.Events)):
 					status = Status(Jam.Events[0:j+1])
@@ -595,6 +600,8 @@ class BoutRender(object):
 					endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
 					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
 						endtime = Jam.Events[j+1].Time
+					if (j==0):
+						status.Time = jstarttime
 					spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 
 					#update JammerScore
@@ -603,7 +610,7 @@ class BoutRender(object):
 					outname[2] = "JammerScoreline" + str(boutnum) + str(spuframes[2]) + ".png"
 					#call convert(?) to smoosh the two pngs together into the third
 					try:
-						print "convert --composite " + outname[0] + " " + outname[1] + " " + outname[2]
+						print "convert -composite " + outname[0] + " " + outname[1] + " " + outname[2]
 						retcode = subprocess.call("convert -composite " + outname[0] + " " + outname[1] + " " + outname[2], shell=True)
 						if retcode < 0:
 							print >>sys.stderr, "Child was terminated by signal", -retcode

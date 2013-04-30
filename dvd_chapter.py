@@ -200,7 +200,7 @@ class BoutRender(object):
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,22,string1,font,ol[0],2)
 		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string3,font),22,string3,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,707,string3+'.',font),22,string3+'.',font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	
 	def makeJammerSubImage (self,filename, boutnum,jamnum,status,dark=[False,False]):
@@ -238,7 +238,7 @@ class BoutRender(object):
 		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,550,string1,font,ol[0],2)
-		drawoutlinedtext(d,getrightalignedloc(d,714,string2,font),550,string2,font,ol[1],2)
+		drawoutlinedtext(d,getrightalignedloc(d,707,string2+'.',font),550,string2+'.',font,ol[1],2)
 		#strings1a, 2a are the status strings for jammer status, and appear above the names
 		#how do we signal Lead, Power jams?
 		#statusstrs = ["",""]

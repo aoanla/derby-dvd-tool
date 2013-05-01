@@ -199,7 +199,7 @@ class BoutRender(object):
 		#need to smoosh these in a tiny bit more (original x were 6, (centered), 714)
 		# as the original x positions apparently hit some undocumented subtitle border of about 12to13 pix around screen
 		drawoutlinedtext(d,13,22,string1,font,ol[0],2)
-		drawoutlinedtext(d,getcentredloc(d,string2,font),22,string2,font,1,3)
+		drawoutlinedtext(d,getcentredloc(d,string2,font,(width/2)-12),22,string2,font,1,3) #adjusted width to compensate for 1 char shift below
 		drawoutlinedtext(d,getrightalignedloc(d,707,string3+'.',font),22,string3+'.',font,ol[1],2)
 		i.save( filename, "PNG", transparency=0)
 	

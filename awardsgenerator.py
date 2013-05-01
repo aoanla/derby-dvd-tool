@@ -5,13 +5,15 @@ import string,subprocess
 #			 black720.png = a black page 720x576
 #			 x.png files for people
 #			 x-names.png files for people+names
+lst=["DRGBJammer.png","NRGBJammer.png","DRGBBlocker.png","NRGBBlocker.png","DRGMVP.png","NRGWinners.png"]
 ii = 0
 def strc(i):
 	return '{0:03}'.format(i)
 
 for i in range(0,25):
 	ii += 1
-	command = "convert awards720.png black720.png -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+	v1 = int((i/24.0)*100)
+	command = "convert black720.png awards.png -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 	subprocess.call(command,shell=True)
 #hold for 2 secs
 for i in range(0,48):
@@ -20,7 +22,8 @@ for i in range(0,48):
 	ii += 1
 for i in range(24,-1,-1):
 	ii += 1
-	command = "convert awards720.png black720.png -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+	v1 = int((i/24.0)*100)
+	command = "convert black720.png awards.png -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 	subprocess.call(command,shell=True)	
 for s in lst:
 	ss = s.split('.')
@@ -28,13 +31,14 @@ for s in lst:
 	#fade in image
 	for i in range(24,-1,-1):
 		ii += 1
-		command = "convert "+s+" black720.png -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+		v1 = int((i/24.0)*100)
+		command = "convert "+s+" black720.png -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 		subprocess.call(command,shell=True)
 	#fade in name
 	for i in range(0,25):
 		ii += 1
 		v1 = int((i/24.0)*100) 
-		command = "convert "+s+" "+sn+" -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+		command = "convert "+s+" "+sn+" -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 		subprocess.call(command,shell=True)
 	#hold for 2 secs
 	for i in range(0,48):
@@ -45,16 +49,17 @@ for s in lst:
 	for i in range(24,-1,-1):
 		ii += 1
 		v1 = int((i/24.0)*100) 
-		command = "convert "+s+" "+sn+" -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+		command = "convert "+s+" "+sn+" -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 		subprocess.call(command,shell=True)
 	#fade out image
-	for i in range(24,-1,-1):
+	for i in range(1,25):
 		ii += 1
-		command = "convert "+s+" black720.png -compose blend -define compose:args="+str(v1)+"% -composite output"+strc(ii)+".png"
+		v1 = int((i/24.0)*100)
+		command = "convert "+s+" black720.png -compose blend -define compose:args="+str(v1)+"% -composite -type TrueColorMatte -define png:color-type=2 output"+strc(ii)+".png"
 		subprocess.call(command,shell=True)
 
 #and ffmpeg (or avconv in newer releases) it into a dvd-suitable movie file (supply silence.mp3)
-subprocess.call("ffmpeg -i output%03d.png -i silence.mp3 -target pal-dvd -aspect 4:3 awards.mpg", shell=True)
+subprocess.call("ffmpeg -shortest -i silence.mp3 -i output%03d.png -target pal-dvd -aspect 4:3 awards.mpg", shell=True)
 
 #btw, the way to get high quality output from cinelerra is to output to high quality Quicktime for Linux, MPEG4 Video, then ffmpeg it to dvd
 		

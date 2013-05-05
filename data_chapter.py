@@ -2,7 +2,7 @@
 
 ###
 #
-# DVD Chapter & Subtitle Script
+# Data Chapter & Subtitle Script
 # Cutdown data entry version (only includes Bout class + dependants)
 # 
 ###

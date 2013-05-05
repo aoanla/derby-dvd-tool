@@ -102,19 +102,26 @@ STAR = 3
 class Status(object):
 	#An integral of Event objects within a jam
 	def __init__(self, eventseq):
-		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x : x | STAR_STATUS}
+		# LEAD gives LEAD
+		# POWER gives POWER (and later removes POWER from other team)
+		# POWEREND removes POWER
+		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
+		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
 		self.Teams = [0,0]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!
 			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
-			self.Teams[e.Team-1] == tr_dict[e.Type](self.Teams[e.Team-1])
+			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
+			if e.Type == POWER_STATUS: #if the team just got a power jam, remove the power jam from the other team
+				self.Teams[2 - e.Team] = tr_dict[POWEREND](self.Teams[2 - e.Team])
+				self.Teams[2 - e.Team] = self.Teams[2 - e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
 			
 #masks for Status
 LEAD_STATUS=1
 POWER_STATUS=2
 STAR_STATUS=4
+LEAD_CANCEL = 7 - LEAD_STATUS
 POWER_CANCEL = 7 - POWER_STATUS #use with AND to unset the POWER_STATUS bit
-#Functions of the Bout Render class render a contained Bouts object
 

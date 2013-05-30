@@ -8,7 +8,6 @@
 import string, Image, ImageDraw, ImagePalette, ImageFont
 import os, sys, codecs, subprocess, textwrap, itertools
 
-from data_chapter import *
 #might need to make this do
 #from data_chapter import * 
 # to get the data_chapter version of Bout, depending on how picky pickle is about reconstructing classes
@@ -29,109 +28,113 @@ creditsfont = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansMono.
 
 #Structure
 
-#class Bout(object):
-#	def __init__(self):
-#		self.Name = None
-#		self.Teams = [] #team 1,2
-#		self.Officials = []
-#		self.Jams = []
-#		#self.Timeouts = []
-#		self.Timing = Timing()
-#		self.NeutralCol = (200,200,200)
-##
-#class Timing(object):
-#	def __init__(self):
-#		self.Start = ""
-#		self.Skateout = ""
-#		self.Halftime = ""
-#		self.Fulltime = ""
-#		self.Awards = ""
-#
-#class Team(object):
-#	def __init__(self):
-#		self.LeagueName = ""
-#		self.TeamName = ""
-#		self.TeamCol = (255,255,255) #R,G,B tuple
-#		self.Skaters = []
-#
-#class Skater(object):
-#	def __init__(self):
-#		self.Skatename = ""
-#		self.Number = ""
-#		self.Role = SKATER #see enum below
-#
-##enum for Skater (designed so order by Role gives credits order):
-#
-#CAPTAIN = 0
-#VICECAPTAIN = 1
-#SKATER = 2
-#BENCH = 3
-#LINEUP = 4
-#
-#
-#class Official(object):
-#	def __init__(self):
-#		self.Name = ""
-#		self.Number = ""
-#		self.Role = None #see enum below
-#
-##enum for Official (designed so order by Role gives credits order):
-#HEAD=0
-#JAM=1
-#IPR=2
-#OPR=3
-#
-#class Jam(object):
-#	def __init__(self):
-#		self.StartTime = ""
-#		self.Period = '0'
-#		self.Jam = '0'
-#		self.Jammers = [] #refs to Skaters, Team1,Team2
-#		self.Pivots = [] #refs to Pivots, Team1, Team2
-#		self.Score = [] #numerical scores to Team1,Team2
-#		self.Events = [] #contains the moments of Lead Jammer, Power Jam start/end, Star Pass
-#		#self.EndTime = ""
-#
-#class Event(object):
-#	def __init__(self):
-#		self.Time = ""
-#		self.Team = None #0 or 1 for Team 1 or 2  - this turns out to be 1,2 from interface, so we fix in Status function
-#		self.Type = None #LJ, PJStart, PJEnd, Star Pass
-#
-##enum for Events
-#LEAD=0
-#POWERSTART = 1
-#POWEREND = 2
-#STAR = 3
+class Bout(object):
+	def __init__(self):
+		self.Name = None
+		self.Teams = [] #team 1,2
+		self.Officials = []
+		self.Jams = []
+		#self.Timeouts = []
+		self.Timing = Timing()
+		self.NeutralCol = (200,200,200)
 
-#
-#class Status(object):
-#	#An integral of Event objects within a jam
-#	def __init__(self, eventseq):
-#		# LEAD gives LEAD
-#		# POWER gives POWER (and later removes POWER from other team)
-#		# POWEREND removes POWER
-#		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
-#		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
-#		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
-#		self.Teams = [0,0]
-#		for e in eventseq:
-#			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
-#			#don't need to do anything now, since the bitwise op will just unset an unset bit!
-#			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
-#			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
-#			if e.Type == POWER_STATUS: #if the team just got a power jam, remove the power jam from the other team
-#				self.Teams[2 - e.Team] = tr_dict[POWEREND](self.Teams[2 - e.Team])
-#				self.Teams[2 - e.Team] = self.Teams[2 - e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
-#			
-##masks for Status
-#LEAD_STATUS=1
-#POWER_STATUS=2
-#STAR_STATUS=4
-#LEAD_CANCEL = 7 - LEAD_STATUS
-#POWER_CANCEL = 7 - POWER_STATUS #use with AND to unset the POWER_STATUS bit
+class Timing(object):
+	def __init__(self):
+		self.Start = ""
+		self.Skateout = ""
+		self.Halftime = ""
+		self.Fulltime = ""
+		self.Awards = ""
+
+class Team(object):
+	def __init__(self):
+		self.LeagueName = ""
+		self.TeamName = ""
+		self.TeamCol = (255,255,255) #R,G,B tuple
+		self.Skaters = []
+
+class Skater(object):
+	def __init__(self):
+		self.Skatename = ""
+		self.Number = ""
+		self.Role = SKATER #see enum below
+
+#enum for Skater (designed so order by Role gives credits order):
+
+CAPTAIN = 0
+VICECAPTAIN = 1
+SKATER = 2
+BENCH = 3
+LINEUP = 4
 
 
+class Official(object):
+	def __init__(self):
+		self.Name = ""
+		self.Number = ""
+		self.Role = None #see enum below
+
+#enum for Official (designed so order by Role gives credits order):
+HEAD=0
+JAM=1
+IPR=2
+OPR=3
+
+class Jam(object):
+	def __init__(self):
+		self.StartTime = ""
+		self.Period = '0'
+		self.Jam = '0'
+		self.Jammers = [] #refs to Skaters, Team1,Team2
+		self.Pivots = [] #refs to Pivots, Team1, Team2
+		self.Score = [] #numerical scores to Team1,Team2
+		self.Events = [] #contains the moments of Lead Jammer, Power Jam start/end, Star Pass
+		#self.EndTime = ""
+
+class Event(object):
+	def __init__(self):
+		self.Time = ""
+		self.Team = None #0 or 1 for Team 1 or 2  - this turns out to be 1,2 from interface, so we fix in Status function
+		self.Type = None #LJ, PJStart, PJEnd, Star Pass
+
+#enum for Events
+LEAD=0
+POWERSTART = 1
+POWEREND = 2
+STAR = 3
+
+
+class Status(object):
+	#An integral of Event objects within a jam
+	def __init__(self, eventseq):
+		# LEAD gives LEAD
+		# POWER gives POWER (and later removes POWER from other team)
+		# POWEREND removes POWER
+		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
+		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
+		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
+		self.Teams = [0,0]
+		for e in eventseq:
+			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
+			#don't need to do anything now, since the bitwise op will just unset an unset bit!
+			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
+			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
+			if e.Type == POWERSTART: #if the team just got a power jam, remove the power jam from the other team
+				#t1 = e.Team-1
+				#t0 = 2
+				#if t1 == 0:
+				#	t0 = 1
+				#else:
+				#	t0 = 0
+				self.Teams[2-e.Team] = tr_dict[POWEREND](self.Teams[2-e.Team])
+				#self.Teams[2-e.Team ] = self.Teams[2-e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
+			
+#masks for Status
+LEAD_STATUS=1
+POWER_STATUS=2
+STAR_STATUS=4
+LEAD_CANCEL = 7 - LEAD_STATUS
+POWER_CANCEL = 7 - POWER_STATUS #use with AND to unset the POWER_STATUS bit
 #Functions of the Bout Render class render a contained Bouts object
 
 #to make a dvd:
@@ -479,7 +482,7 @@ class BoutRender(object):
 		#similarly with the "audiotools" module, which provides the .seconds_length method on files
 		# presumably audiotools.open(filename).seconds_length() will work? 
 		# or pydub?
-		frames = 30*25
+		frames = 35*25 #35seconds for Transformers theme
 		pixels_per_frame = float(crawl_height) / frames
 		#blendfrac = pixels_per_frame - int(pixels_per_frame)
 		#int_p_p_f = int(pixels_per_frame)
@@ -497,7 +500,7 @@ class BoutRender(object):
 		if (self.CreditMusic == None) or (self.CreditMusic.isspace() ):
 			print "No Music Selected for Credits"
 			sys.exit(1)
-		subprocess.call("ffmpeg -f image2 -r 25 -i cr_frm%04d.png -i "+ self.CreditMusic +" -target dvd -t 30 "+ filename,shell=True)
+		subprocess.call("ffmpeg -f image2 -r 25 -i cr_frm%04d.png -i "+ self.CreditMusic +" -target dvd -t 35 "+ filename,shell=True)
 
 	def Tuple2Txt(self,tup):
 		return "rgba(%2d,%2d,%2d,255)" % tup
@@ -530,8 +533,8 @@ class BoutRender(object):
 			 	
 		spumuxxml += '<spu start="' + starttime+'.1" end="' + endtime + '" image="' + outname + '"  >' + "\n"
 		spumuxxml += '<row startline="0" endline="' + str(height - 1) + '" >' + "\n" #height or height-1?
-		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team1Colour) + '" />' + "\n"
-		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(NeutralColour) + '" e2="' + self.Tuple2Txt(Team2Colour) + '" />' + "\n"
+		spumuxxml += '<column start="0" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team1Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
+		spumuxxml += '<column start="' + str(width/2) + '" b="rgba(0,0,0,0)" p="rgba(0,0,0,255)" e1="' + self.Tuple2Txt(Team2Colour) + '" e2="' + self.Tuple2Txt(NeutralColour) + '" />' + "\n"
 			#Above does the below pseudocode, with a suitably patched spumux binary(!)
 			#xml chg_colcon (all rows, col 0 to middle, TeamColour = Status.Team1.Colour)
 			#xml chg_colcon (all rows, col middle to last, TeamColour = Status.Team2.Colour)
@@ -788,7 +791,12 @@ class BoutRender(object):
 		dvdauthxml += '<vob file="'+self.Movie+'" chapters="' + ",".join([c[0] for c in self.ChapList]) + '" />' + "\n"
 		dvdauthxml += "<post>jump title 2;</post>\n" #the credits are title 2
 		dvdauthxml += "</pgc>\n"
-		#and add the credits as title 2
+		#and add the awards as title 2
+		dvdauthxml += "<pgc>\n"
+		dvdauthxml += '<vob file="awards.mpg" />' + "\n"
+		dvdauthxml += "<post>jump title 3;</post>\n" #jump back to the main menu, in the vmgm
+		dvdauthxml += "</pgc>\n"
+		#credits title 3
 		dvdauthxml += "<pgc>\n"
 		dvdauthxml += '<vob file="credits.mpg" />' + "\n"
 		dvdauthxml += "<post>call vmgm menu 1;</post>\n" #jump back to the main menu, in the vmgm

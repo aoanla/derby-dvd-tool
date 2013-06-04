@@ -127,7 +127,7 @@ class Status(object):
 				#else:
 				#	t0 = 0
 				self.Teams[2-e.Team] = tr_dict[POWEREND](self.Teams[2-e.Team])
-				#self.Teams[2-e.Team ] = self.Teams[2-e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
+				self.Teams[2-e.Team ] = self.Teams[2-e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
 			
 #masks for Status
 LEAD_STATUS=1

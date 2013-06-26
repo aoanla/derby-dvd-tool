@@ -214,7 +214,8 @@ class JamsDialog(SD.Dialog):
 				if event.Type > dc.SCORE
 					jentry[-1][2].set(dc.SCORE)
 					jentry[-1][3].set(event.Type - dc.SCORE)
-				jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
+				else:
+					jentry[-1][2].set(event.Type) #this is the internal value of the radio button selector 
 
 	def add_jams(self,f):
 		return lambda: self._add_jams(f)

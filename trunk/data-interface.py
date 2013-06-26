@@ -275,7 +275,7 @@ class JamsDialog(SD.Dialog):
 		#and add the button for events (see below for callback)
 		eventbut = Tk.Button(jamframes[-1],text="Add Event Row",command=self.add_eventrow(self.interstitial[-1],self.JamEntries[-1]))
 		eventbut.pack(side=Tk.LEFT)
-		removebut = Tk.Button(jamframes[-1],text="Remove Event Row", command=self.remove_eventrow(entry))
+		removebut = Tk.Button(jamframes[-1],text="Remove Event Row", command=self.remove_eventrow(self.JamEntries[-1]))
 		removebut.pack(side=Tk.LEFT)
 
 	def add_eventrow(self,frame,entry):

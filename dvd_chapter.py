@@ -122,10 +122,11 @@ class Status(object):
 			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
 			if e.Type > SCORE: #then we have a scoring status, not a jammer status
 				self.Teams[e.Team-1]['Score'] += e.Type - SCORE
-			self.Teams[e.Team-1]['Status'] = tr_dict[e.Type](self.Teams[e.Team-1]['Status'])
-			if e.Type == POWERSTART: #if the team just got a power jam, remove the power jam from the other team
-				self.Teams[2-e.Team]['Status'] = tr_dict[POWEREND](self.Teams[2-e.Team]['Status'])
-				self.Teams[2-e.Team ]['Status'] = self.Teams[2-e.Team]['Status'] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
+			else:
+				self.Teams[e.Team-1]['Status'] = tr_dict[e.Type](self.Teams[e.Team-1]['Status'])
+				if e.Type == POWERSTART: #if the team just got a power jam, remove the power jam from the other team
+					self.Teams[2-e.Team]['Status'] = tr_dict[POWEREND](self.Teams[2-e.Team]['Status'])
+					self.Teams[2-e.Team ]['Status'] = self.Teams[2-e.Team]['Status'] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
 			
 #masks for Status
 LEAD_STATUS=1

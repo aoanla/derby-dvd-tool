@@ -86,6 +86,8 @@ class Jam(object):
 		self.Events = [] #contains the moments of Lead Jammer, Power Jam start/end, Star Pass
 		#self.EndTime = ""
 
+
+#in order to handlge "pass-by-pass scores", events need to be extended to also cover scoreline changes
 class Event(object):
 	def __init__(self):
 		self.Time = ""
@@ -97,27 +99,30 @@ LEAD=0
 POWERSTART = 1
 POWEREND = 2
 STAR = 3
+SCORE = 4 #and higher - actual score is Type - Score
 
-
+#In order to handle "pass-by-pass scores", events need to be extended to also cover changes to the scoreline
 class Status(object):
 	#An integral of Event objects within a jam
-	def __init__(self, eventseq):
+	def __init__(self, eventseq, initscores=(0,0)):
 		# LEAD gives LEAD
 		# POWER gives POWER (and later removes POWER from other team)
 		# POWEREND removes POWER
 		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
 		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
-		self.Teams = [0,0]
+		self.Teams = [{'Status':0,'Score':initscores[0]}],{Status':0,'Score':initscores[1]}]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!
 			#need to subtract one from e.Team cause of annoying interface issues with things starting at 0
-			self.Teams[e.Team-1] = tr_dict[e.Type](self.Teams[e.Team-1])
-			if e.Type == POWER_STATUS: #if the team just got a power jam, remove the power jam from the other team
-				self.Teams[2 - e.Team] = tr_dict[POWEREND](self.Teams[2 - e.Team])
-				self.Teams[2 - e.Team] = self.Teams[2 - e.Team] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 
-			
+			if e.Type > SCORE: #then we have a scoring status, not a jammer status
+				self.Teams[e.Team-1]['Score'] += e.Type - SCORE
+			else:
+				self.Teams[e.Team-1]['Status'] = tr_dict[e.Type](self.Teams[e.Team-1]['Status'])
+				if e.Type == POWERSTART: #if the team just got a power jam, remove the power jam from the other team
+					self.Teams[2-e.Team]['Status'] = tr_dict[POWEREND](self.Teams[2-e.Team]['Status'])
+					self.Teams[2-e.Team ]['Status'] = self.Teams[2-e.Team]['Status'] & LEAD_CANCEL #and remove the other team's lead, as majors remove your lead status 						
 #masks for Status
 LEAD_STATUS=1
 POWER_STATUS=2

@@ -115,7 +115,7 @@ class Status(object):
 		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
 		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
-		self.Teams = [{'Status':0,'Score':initscores[0]},{'Status':0,'Score':initscores[1]}]
+		self.Teams = [{'Status':0,'Score':int(initscores[0])},{'Status':0,'Score':int(initscores[1])}]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!
@@ -193,7 +193,7 @@ class BoutRender(object):
 		#
 		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
 		if scores is not None:
-			s = scores
+			s = [str(s) for s in scores]
 		else:
 			s = self.Bouts[boutnum].Jams[jamnum].Score
 			
@@ -231,16 +231,16 @@ class BoutRender(object):
 		prepend = [["","(SP)"],["","LJ "],["","PJ "]]
 		append = [["(SP)",""],[" LJ",""],[" PJ",""]]
 		for i in range(2):
-			if status.Teams[i] & STAR_STATUS == STAR_STATUS : 
+			if status.Teams[i]['Status'] & STAR_STATUS == STAR_STATUS : 
 				jammers.append(prepend[0][i]+self.Bouts[boutnum].Jams[jamnum].Pivots[i][0:20]+append[0][i])
 			else:
 				print self.Bouts[boutnum].Jams[jamnum].Jammers[i]
 				print boutnum
 				print jamnum  
 				jammers.append(self.Bouts[boutnum].Jams[jamnum].Jammers[i][0:24])
-			if status.Teams[i] & LEAD_STATUS == LEAD_STATUS :
+			if status.Teams[i]['Status'] & LEAD_STATUS == LEAD_STATUS :
 				jammers[i] = prepend[1][i] + jammers[i] + append[1][i]
-			if status.Teams[i] & POWER_STATUS == POWER_STATUS :
+			if status.Teams[i]['Status'] & POWER_STATUS == POWER_STATUS :
 				jammers[i] = prepend[2][i] + jammers[i] + append[2][i]
 
 		string1 = '{0:<27.27}'.format(jammers[0])

@@ -111,7 +111,7 @@ class Status(object):
 		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
 		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
-		self.Teams = [{'Status':0,'Score':initscores[0]}],{Status':0,'Score':initscores[1]}]
+		self.Teams = [{'Status':0,'Score':initscores[0]},{'Status':0,'Score':initscores[1]}]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!

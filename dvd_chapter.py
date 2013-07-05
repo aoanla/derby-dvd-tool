@@ -115,7 +115,7 @@ class Status(object):
 		# STAR gives STAR and removes LEAD (starred pivots can't have lead status)
 		tr_dict = {LEAD:lambda x: x | LEAD_STATUS,POWERSTART: lambda x: x | POWER_STATUS,POWEREND:lambda x : x & POWER_CANCEL,STAR: lambda x :  (x | STAR_STATUS) & LEAD_CANCEL} 
 		self.Time=eventseq[-1].Time #our time is always that of last event in passed sequence
-		self.Teams = [{'Status':0,'Score':initscores[0]}],{Status':0,'Score':initscores[1]}]
+		self.Teams = [{'Status':0,'Score':initscores[0]},{'Status':0,'Score':initscores[1]}]
 		for e in eventseq:
 			#handle dummy rows for jam start events (which use POWEREND with no POWERSTART)
 			#don't need to do anything now, since the bitwise op will just unset an unset bit!
@@ -187,17 +187,22 @@ class BoutRender(object):
 		self.ChpSrc=chpsrc
 		self.CreditMusic=creditmusic
 			
-	def makeScoreSubImage (self,filename, boutnum,jamnum,dark=[False,False]):
+	def makeScoreSubImage (self,filename, boutnum,jamnum,dark=[False,False],scores=None): #need to handle pass-by-pass scores from events
 		"""make a 3colour png for the Scoreline, at top of display"""
 		#needs to make
 		#
 		#  T1 S1  PPJJJ  S2 T2  59 char width (out of 60 allowed)
+		if scores is not None:
+			s = scores
+		else:
+			s = self.Bouts[boutnum].Jams[jamnum].Score
+			
 		d,i = initSubImage()
 		ol = [3 if c else 1 for c in dark] #bright outline for dark colours
 		string1 = '{0:<20.20}'.format(self.Bouts[boutnum].Teams[0].TeamName) 
-		string1 += '  ' + '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[0])
+		string1 += '  ' + '{0:0>3.3}'.format(s[0])
 		string2 = 'P' + self.Bouts[boutnum].Jams[jamnum].Period + 'J' + '{0:0>2.2}'.format(self.Bouts[boutnum].Jams[jamnum].Jam)
-		string3 = '{0:0>3.3}'.format(self.Bouts[boutnum].Jams[jamnum].Score[1])
+		string3 = '{0:0>3.3}'.format(s[1])
 		string3 += '  ' + '{0:>20.20}'.format(self.Bouts[boutnum].Teams[1].TeamName)
 		 
 		#regularise team name + score lines to standard length
@@ -621,7 +626,7 @@ class BoutRender(object):
 					else: #the event is a SCORE, so we update the Scoreline instead
 						spuframes[0] += 1 #increment number of Scoreline frames
 						outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframes[0]) + ".png"
-						self.makeScoreSubImage(outname[0],boutnum,i,dark) # need to fix this to use the updated Event Scores
+						self.makeScoreSubImage(outname[0],boutnum,i,dark,[i['Score'] for i in status.Teams]) # need to fix this to use the updated Event Scores
 						scorevents = filter(lambda x: x.Type > SCORE,Jam.Events[j+1:]) #get list of SCORE events only, starting after current evnt
 						if len(scorevents) > 0: #if we get any at all, our endtime is this next score change
 							jendtime = scorevents[0].Time

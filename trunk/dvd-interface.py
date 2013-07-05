@@ -189,18 +189,18 @@ class JamsDialog(SD.Dialog):
 			jentry[8].insert(0,jam.Score[1])
 			jentry[-1][0].insert(0,jam.Events[0].Time)
 			jentry[-1][1].set(jam.Events[0].Team)
-			if jam.Events[0].Type > dc.SCORE
-					jentry[-1][2].set(dc.SCORE)
-					jentry[-1][3].set(jam.Events[0].Type - dc.SCORE)
-				else:
-					jentry[-1][2].set(jam.Events[0].Type) #this is the internal value of the radio button selector 
+			if jam.Events[0].Type >= dc.SCORE:
+				jentry[-1][2].set(dc.SCORE)
+				jentry[-1][3].set(jam.Events[0].Type - dc.SCORE)
+			else:
+				jentry[-1][2].set(jam.Events[0].Type) #this is the internal value of the radio button selector 
 			for event in jam.Events[1:]:
 				#identify type, unpack
 				self._add_eventrow(jframe,jentry)
 				#this row is always the last one, so
 				jentry[-1][0].insert(0,event.Time) #the first entry box is the Time
 				jentry[-1][1].set(event.Team) #the second entry box is the Team ID
-				if event.Type > dc.SCORE
+				if event.Type >= dc.SCORE:
 					jentry[-1][2].set(dc.SCORE)
 					jentry[-1][3].set(event.Type - dc.SCORE)
 				else:
@@ -279,7 +279,7 @@ class JamsDialog(SD.Dialog):
 		row.append(Tk.IntVar())  #Radio Buttons for Event type, default value Lead Jammer call
 		row[-1].set(dc.LEAD)
 		decode = ("Lead Jammer","Power Jam Starts", "PJ Ends/No PJ", "Star Pass", "Scoring Pass")
-		for i in range(dc.STAR+1):
+		for i in range(len(decode)):
 			t = Tk.Radiobutton(f,text=decode[i],variable=row[2],value=i).pack(side=Tk.LEFT)
 		row.append(Tk.IntVar()) #the "score" if this is a Scoring Pass - can be from 0 to 5
 		row[-1].set(0) #no score is the default
@@ -309,7 +309,7 @@ class JamsDialog(SD.Dialog):
 				e.Team = event_entry[1].get()
 				e.Type = event_entry[2].get()
 				if e.Type == dc.SCORE: #if the event is a scoring pass, we need to add on the score to the value to get the Type
-					e.Type += event.entry[3].get()
+					e.Type += event_entry[3].get()
 				j.Events.append(e)
 				
 			self.data[0].append(j)

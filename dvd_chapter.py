@@ -694,6 +694,8 @@ class BoutRender(object):
 		#need to handle ChapterLists by parsing out all of the Jams from each Bout in sequence, prepending Start,Skateout, inserting Halftime, appending FullTime, Awards
 		#Credits are *not* a Chapter, they are a separately rendered title
 		self.ChapList = []
+		if len(self.Bouts) > 1: #trying to fix this off by one error in DVDs where the first chapter is not at 00 timestamp
+			self.ChapList.append(['00:00:00',"Start DVD"])
 		for b in self.Bouts:
 			bname = ""
 			if b.Name is not None:

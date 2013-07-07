@@ -586,17 +586,20 @@ class BoutRender(object):
 				self.makeScoreSubImage(outname[0],boutnum,i,dark)
 				#LOGIC HERE FOR SCORE EVENT DETECTION
 				scorevents = filter(lambda x: x.Type > SCORE,Jam.Events) #get list of SCORE events only
+				if Jam.Period == "1":
+					jamend = self.Bouts[boutnum].Timing.Halftime #end of first period time
+				elif Jam.Period == "2":  
+					jamend = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
+				if (i+1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
+					if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
+							jamend = self.Bouts[boutnum].Jams[i+1].StartTime
+
 				if len(scorevents) > 0: #if we get any at all, our endtime is this next score change
 					jendtime = scorevents[0].Time
 				else:
+					jendtime = jamend
 					#no score events, so...jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters
-					if Jam.Period == "1":
-						jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
-					elif Jam.Period == "2":  
-						jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
-					if (i+1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
-						if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
-							jendtime = self.Bouts[boutnum].Jams[i+1].StartTime
+					
 				#
 				#offset StartTime, want it to be 1 seconds later than this, to avoid previous sub start, and chapters
 				seconds = sum([ int(k[0])*k[1] for k in zip(Jam.StartTime.split(':'),[3600,60,1]) ] ) + 1
@@ -611,35 +614,29 @@ class BoutRender(object):
 					status = Status(Jam.Events[0:j+1],tuple(Jam.Score))
 					print status.Teams[0]
 					print status.Teams[1]
+					#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
+					endtime = jamend #default to the "end of jam" from above, as this is the furthest away the end can be
+					if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
+						endtime = Jam.Events[j+1].Time
+					if (j==0):
+						status.Time = jstarttime
 					#update Jammer if Event is not a SCORE
 					if Jam.Events[j].Type < SCORE: #or j+1?
 						spuframes[1] += 1 #increment number of Jammerline frames
 						outname[1] = "Jammerline" + str(boutnum)+ "_" + str(spuframes[1]) + ".png"
 						self.makeJammerSubImage(outname[1],boutnum,i,status,dark)
-						#get Endtime - it's either the next event time in the jam, or the start time of the next jam (or the end of the sequence)
-						endtime = jendtime #default to the "end of jam" from above, as this is the furthest away the end can be
-						if (j+1) < len(Jam.Events): #if there are more Events in this jam, use them instead
-							endtime = Jam.Events[j+1].Time
-						if (j==0):
-							status.Time = jstarttime
 						spumuxxmls[1] = self.AddSpumuxxml(spumuxxmls[1],status.Time,endtime,outname[1],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 					else: #the event is a SCORE, so we update the Scoreline instead
 						spuframes[0] += 1 #increment number of Scoreline frames
 						outname[0] = "Scoreline" + str(boutnum)+ "_" + str(spuframes[0]) + ".png"
-						self.makeScoreSubImage(outname[0],boutnum,i,dark,[i['Score'] for i in status.Teams]) # need to fix this to use the updated Event Scores
+						self.makeScoreSubImage(outname[0],boutnum,i,dark,[xx['Score'] for xx in status.Teams]) # need to fix this to use the updated Event Scores
 						scorevents = filter(lambda x: x.Type > SCORE,Jam.Events[j+1:]) #get list of SCORE events only, starting after current evnt
 						if len(scorevents) > 0: #if we get any at all, our endtime is this next score change
-							jendtime = scorevents[0].Time
+							jxendtime = scorevents[0].Time
 						else: 
-							#no more scores so, jendtime = next jam starttime , or the start of the Halftime or Fulltime chapters	
-							if Jam.Period == "1":
-								jendtime = self.Bouts[boutnum].Timing.Halftime #end of first period time
-							elif Jam.Period == "2":  
-								jendtime = self.Bouts[boutnum].Timing.Fulltime #the latest the endtime can possibly be is the Fulltime for the bout
-							if (i+1) < len(self.Bouts[boutnum].Jams): #then there is at least one more jam, so we should try that jams starttime
-								if self.Bouts[boutnum].Jams[i+1].Period == Jam.Period: #if not, then halftime is in the way
-									jendtime = self.Bouts[boutnum].Jams[i+1].StartTime 
-						spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],jstarttime,jendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)	
+							jxendtime = jamend
+							
+						spumuxxmls[0] = self.AddSpumuxxml(spumuxxmls[0],status.Time,jxendtime,outname[0],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)	
 					#update JammerScore
 					# take latest Score and latest Jammer, and sum them, taking the start time of the later of the two (possibly do this as a second pass)	
 					spuframes[2] += 1
@@ -652,7 +649,7 @@ class BoutRender(object):
 							print >>sys.stderr, "Child was terminated by signal", -retcode
 					except OSError as e:
 						print >>sys.stderr, "Execution failed:", e
-
+					#always use the endtime for the next *event*, regardless of if we had a SCORE or Jammer update
 					spumuxxmls[2] = self.AddSpumuxxml(spumuxxmls[2],status.Time,endtime,outname[2],self.Bouts[boutnum].NeutralCol,self.Bouts[boutnum].Teams[0].TeamCol,self.Bouts[boutnum].Teams[1].TeamCol)
 	
 		#and close the xml streams

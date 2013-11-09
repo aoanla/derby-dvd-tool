@@ -5,10 +5,7 @@ import string,subprocess
 #			 black720.png = a black page 720x576
 #			 x.png files for people
 #			 x-names.png files for people+names
-suffs = ["BJ.png","BB.png","MVP.png"]
-prefs = ["Jakey","Barrow"]
-lst = [ ''.join([ps,ss]) for ss in suffs for ps in prefs]
-#lst=["DRGBJ.png","NRGBJ.png","DRGBB.png","NRGBB.png","DRGMVP.png","NRGMVP.png"]
+lst=["DRGBJammer.png","NRGBJammer.png","DRGBBlocker.png","NRGBBlocker.png","DRGMVP.png","NRGWinners.png"]
 ii = 0
 def strc(i):
 	return '{0:03}'.format(i)

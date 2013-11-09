@@ -267,7 +267,7 @@ class BoutRender(object):
 	def makeMainMenu(self):
 		"""Make the main menu, from a standard backdrop"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i " +self.MainSrc+" -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 main.mpg",shell=True)
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i " +self.MainSrc+" -i ./silence.mp3 -target dvd -aspect 4:3 main.mpg",shell=True)
 		#make subimages
 		self.makeMainMenuSubImage("main")
 		#mux
@@ -302,7 +302,7 @@ class BoutRender(object):
 	def makeSubtitlesMenu(self):
 		"""Make the Subtitles selection menu, from standard backdrop + subtitle menus"""
 		#make menu backdrop
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc + " -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 subtitles.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc + " -i ./silence.mp3 -target dvd -aspect 4:3 subtitles.mpg",shell=True)	
 		#make subimages
 		self.makeSubtitlesSubImage("subtitles")
 		#mux
@@ -463,6 +463,7 @@ class BoutRender(object):
 					credit_txt.append((line,y,ol,fg))
 					y+=h
 			y += 2*h #two blank "lines"
+		self.Extracredits = ["Awards Photos: Claire Brunton", "zenspirations photography","","Video rendering: Cinelerra","","DVD: derby-dvd-tool","Sam Skipsey 2013"]
 		for line in self.Extracredits:
 			#consider explicitly forcing wrapping here
 			credit_txt.append((line,y,ol,fg))
@@ -764,17 +765,20 @@ class BoutRender(object):
 		dvdauthxml += "<menus>\n"
 		#start making chapter menus
 		#first, render our "static" generic background with ffmpeg - get silence.ogg from somewhere, and consider if input jpg is configurable
-		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc +" -i /usr/share/devede/silence.ogg -target dvd -aspect 4:3 menubackdrop.mpg",shell=True)	
+		subprocess.call("ffmpeg -loop 1 -shortest -y -i "+ self.ChpSrc +" -i ./silence.mp3 -target dvd -aspect 4:3 menubackdrop.mpg",shell=True)	
 		#then make lots of chapter menus with it
 		
 		self.GenChapters() #make our chapters
 		l = len(self.ChapList)
+		print self.ChapList
+		print "Len is"
+		print l
 		for i in range(0,l,8):
 			block = self.ChapList[i:(i+8)]
 			last = False
 			first = False
 			#make 3 subpictures (4x2 arrangement) - normal, highlight, select
-			if i > (l-8) :  last = True #removes "Next" button
+			if i >= (l-8) :  last = True #removes "Next" button
 			if i == 0 : first = True #changes "Prev" button target to the main menu
 			fname="chaptermenu"+str(i//8)
 			self.makeMenuSubImage(fname,block,last)
